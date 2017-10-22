@@ -3,6 +3,7 @@
 module.exports = {
     entry: {
         app: ["babel-polyfill", "./src/index.js"],
+        "gl-matrix": ["gl-matrix"],
     },
     output: {
         path: __dirname + "/dist",
@@ -10,12 +11,13 @@ module.exports = {
     },
     devServer: {
         contentBase: "./dist",
-        host: "localhost",
+        host: "140.118.127.152",
         port: 9000,
     },
     module: {
         loaders: [
             { test: /\.jsx?$/, exclude: /node_modules/, loader: "babel-loader", query: { presets: ['es2015'] } },
+            { test: /gl-matrix/, loader: "babel-loader", query: { presets: ['es2015'] } },
             { test: /\.html?$/, loader: "file-loader?name=[name].[ext]" },
             { test: /assets(?=\/|\\)/, loader: "file-loader?name=assets/[name].[ext]" },
         ],
