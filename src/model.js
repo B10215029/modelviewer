@@ -1,5 +1,5 @@
 import * as glm from "gl-matrix";
-import {vec4,mat4} from "gl-matrix";
+import { vec4, mat4, quat } from "gl-matrix";
 
 class Model {
 	/**
@@ -18,6 +18,8 @@ class Model {
 		this.shear = glm.vec3.fromValues(0, 0, 0);
 		if (modelData.charAt(0) === "T")
 			this.readTriData(modelData);
+		else if (modelData.charAt(0) === "{")
+			this.readJSONData(modelData);
 		else
 			this.readObjData(modelData);
 		this.color = vec4.fromValues(0.5, 0.5, 0.4, 1);
@@ -29,12 +31,16 @@ class Model {
 	 */
 	get modelMatrix() {
 		let modelMat = mat4.create();
-		// mat4.shear TODO
-		mat4.translate(modelMat, modelMat, this.position);
-		mat4.rotateX(modelMat, modelMat, this.rotation[0]);
-		mat4.rotateY(modelMat, modelMat, this.rotation[1]);
-		mat4.rotateZ(modelMat, modelMat, this.rotation[2]);
-		mat4.scale(modelMat, modelMat, this.scale);
+		// mat4.translate(modelMat, modelMat, this.position);
+		// mat4.rotateX(modelMat, modelMat, this.rotation[0]);
+		// mat4.rotateY(modelMat, modelMat, this.rotation[1]);
+		// mat4.rotateZ(modelMat, modelMat, this.rotation[2]);
+		// modelMat[8] += this.shear[0];
+		// modelMat[9] += this.shear[1];
+		// mat4.scale(modelMat, modelMat, this.scale);
+		mat4.fromRotationTranslationScale(modelMat, quat.fromEuler(quat.create(), ...this.rotation), this.position, this.scale);
+		modelMat[8] += this.shear[0] * this.scale[0];
+		modelMat[9] += this.shear[1] * this.scale[1];
 		return modelMat;
 	}
 
@@ -106,6 +112,19 @@ class Model {
 				this.normals.push(...norms[data[5] - 1].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
 				this.normals.push(...norms[data[8] - 1].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
 			}
+		}
+	}
+
+	readJSONData(textData) {
+		this.vertexs = [];
+		this.normals = [];
+		let data = JSON.parse(textData);
+		let verts = data.vertexPositions;
+		let norms = data.vertexNormals;
+		let faces = data.indices;
+		for (const face of faces) {
+			this.vertexs.push(verts[face * 3], verts[face * 3 + 1], verts[face * 3 + 2]);
+			this.normals.push(norms[face * 3], norms[face * 3 + 1], norms[face * 3 + 2]);
 		}
 	}
 }

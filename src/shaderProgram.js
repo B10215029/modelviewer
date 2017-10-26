@@ -1,5 +1,6 @@
 import Model from "./model";
 import {vec3, vec4, mat4} from "gl-matrix";
+import { Light } from "./light"
 
 export class Phong {
 	/**
@@ -27,10 +28,9 @@ export class Phong {
 	 * @param {mat4} viewMatrix 
 	 * @param {mat4} projectionMatrix 
 	 * @param {vec4} ambientColor 
-	 * @param {vec4} lightColor 
-	 * @param {vec3} lightDirection 
+	 * @param {Light[]} lights
 	 */
-	renderModel(model, viewMatrix, projectionMatrix, ambientColor, lightColor, lightDirection) {
+	renderModel(model, viewMatrix, projectionMatrix, ambientColor, lights) {
 		this.gl.useProgram(this.program);
 		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, model.vertexBuffer);
 		this.gl.enableVertexAttribArray(this.vertexPositionLocation);
@@ -43,8 +43,8 @@ export class Phong {
 		this.gl.uniformMatrix4fv(this.projectionMatrixLocation, false, projectionMatrix);
 		this.gl.uniform4fv(this.ambientColorLocation, ambientColor);
 		this.gl.uniform4fv(this.diffuseColorLocation, model.color);
-		this.gl.uniform4fv(this.lightColorLocation, lightColor);
-		this.gl.uniform3fv(this.lightDirectionLocation, lightDirection);
+		this.gl.uniform4fv(this.lightColorLocation, [...lights[0].color, 1]);
+		this.gl.uniform3fv(this.lightDirectionLocation, lights[0].position);
 		this.gl.uniform1f(this.shininessLocation, model.shininess);
 
 		this.gl.drawArrays(this.gl.TRIANGLES, 0, model.vertexs.length / 3);

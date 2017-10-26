@@ -1,13 +1,65 @@
+<!DOCTYPE html>
 <html>
 
 <head>
     <title>WebGL Test</title>
-     <script type="text/javascript" src="gl-matrix.js"></script> 
-     <script type="text/javascript" src="app.js"></script> 
+    <script type="text/javascript" src="gl-matrix.js"></script>
+    <script type="text/javascript" src="app.js"></script>
 </head>
 
 <body>
-    <canvas id="glcanvas" style="border: 1px solid black;" width="500" height="500"></canvas>
+    <canvas id="glcanvas" style="border: 1px solid black;" width="900" height="900"></canvas>
+    <table>
+        <tr>
+            <td style="border: 1px solid black;" id="modelcontroller0">
+            </td>
+            <td style="border: 1px solid black;" id="modelcontroller1">
+            </td>
+            <td style="border: 1px solid black;" id="modelcontroller2">
+            </td>
+        </tr>
+        <tr>
+            <td style="border: 1px solid black;" id="lightcontroller0">
+                <br>Rotation X<input type="range" id="rotxbar" min="-3.14" max="3.14" step="0.1">
+                <br>Rotation Y<input type="range" id="rotybar" min="-3.14" max="3.14" step="0.1">
+                <br>Rotation Z<input type="range" id="rotzbar" min="-3.14" max="3.14" step="0.1">
+                <br><input type="range" id="scabar">
+            </td>
+            <td style="border: 1px solid black;" id="lightcontroller1">
+                <br>Rotation X<input type="range" id="rotxbar" min="-3.14" max="3.14" step="0.1">
+                <br>Rotation Y<input type="range" id="rotybar" min="-3.14" max="3.14" step="0.1">
+                <br>Rotation Z<input type="range" id="rotzbar" min="-3.14" max="3.14" step="0.1">
+                <br><input type="range" id="scabar">
+            </td>
+        </tr>
+    </table>
+    <datalist id="modelList">
+        <option value="ball.tri">123</option>
+        <option value="car_roadster.tri"></option>
+        <option value="csie.tri"></option>
+        <option value="easter.tri"></option>
+        <option value="fighter.tri"></option>
+        <option value="gym.tri"></option>
+        <option value="kangaroo.tri"></option>
+        <option value="longteapot.tri"></option>
+        <option value="mercedes.tri"></option>
+        <option value="mig27.tri"></option>
+        <option value="office.tri"></option>
+        <option value="patchair.tri"></option>
+        <option value="plant.tri"></option>
+        <option value="police.tri"></option>
+        <option value="pot.tri"></option>
+        <option value="teapot.tri"></option>
+        <option value="tomcat.tri"></option>
+        <option value="Teapot.json"></option>
+        <option value="mesh.obj"></option>
+    </datalist>
+    <datalist id="textureList">
+        <option value="fdfFirefox"></option>
+        <option value="fdfChrome"></option>
+        <option value="fdfOpera"></option>
+        <option value="fdfSafari"></option>
+    </datalist>
 </body>
 
 </html>

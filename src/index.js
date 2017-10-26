@@ -7,91 +7,90 @@ import Model from "./model";
 import { downloadModel } from "./model";
 import { downloadProgram, Phong } from "./shaderProgram";
 import { CameraController } from "./cameracontroller";
+import { Camera } from "./camera"
+import { ModelController } from "./modelController";
+import { Light } from "./light"
+import { LightController } from "./lightController"
+
+require("../assets/fighter.tri");
 
 /** @type {WebGLRenderingContext} */
 var gl;
-/** @type {Phong} */
-var flatProgram;
-/** @type {Phong} */
-var gouraudProgram;
-/** @type {Phong} */
-var phongProgram;
-/** @type {Model} */
-var pot;
 
-var theta = 0.0;
-var dr = 5.0 * Math.PI / 180.0;
-var near = -10;
-var far = 1000;
-var radius = 50;
-var phi = 0.0;
+/** @type {Phong[]} */
+var shaderPrograms = [];
 
-var left = -3.0;
-var right = 3.0;
-var ytop = 3.0;
-var bottom = -3.0;
+/** @type {CameraController} */
+var cameraController;
+/** @type {Camera} */
+var camera;
+
+/** @type {ModelController[]} */
+var modelControllers = [];
+// /** @type {Model[]} */
+// var models = [];
+
+/** @type {LightController[]} */
+var lightControllers = [];
+/** @type {Light[]} */
+var lights = [];
 
 var lightAmbient = [0.2, 0.2, 0.2, 1.0];
 var lightSpecular = [1.0, 1.0, 1.0, 1.0];
 
-var at = [0.0, 0.0, 0.0];
-var up = [0.0, 1.0, 0.0];
-
 window.onload = () => {
-	let canvas = document.getElementById("glcanvas");
-	gl = WebGLUtils.setupWebGL(canvas);
-	gl.viewport(0, 0, canvas.width, canvas.height);
-	gl.clearColor(1.0, 1.0, 1.0, 1.0);
-	// gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	gl.enable(gl.DEPTH_TEST);
+    let canvas = document.getElementById("glcanvas");
+    gl = WebGLUtils.setupWebGL(canvas);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    gl.enable(gl.DEPTH_TEST);
+    gl.getExtension('OES_standard_derivatives');
 
-	Promise.all([
-		downloadModel(require("../assets/pot.tri"), gl),
-		// downloadModel(require("../assets/mesh.obj"), gl),
-		downloadProgram(gl, require("../assets/flat.vert"), require("../assets/flat.frag")),
-		downloadProgram(gl, require("../assets/gouraud.vert"), require("../assets/gouraud.frag")),
-		downloadProgram(gl, require("../assets/phong.vert"), require("../assets/phong.frag")),
-	]).then(([model1, program1, program2, program3]) => {
-		flatProgram = new Phong(gl, program1);
-		gouraudProgram = new Phong(gl, program2);
-		phongProgram = new Phong(gl, program3);
+    camera = new Camera();
+    // camera.ortho(-3, 3, -1, 1, -10, 1000);
+    camera.perspective(3.14/4, canvas.width / canvas.height, 0.1, 10000);
+    cameraController = new CameraController(canvas, camera);
 
-		pot = model1;
-		// pot.position[0] = 0;
-		pot.scale = vec3.fromValues(0.01, 0.01, 0.01);
-		// pot.scale = vec3.fromValues(100, 100, 100);
-		// pot.scale = vec3.fromValues(5, 5, 5);
-		// pot.shininess = 5;
-		
+    lights = [new Light(), new Light()];
+    lightControllers = lights.map((value, index) => {
+        let controller = new LightController(value);
+        controller.appendToElement(document.getElementById("lightcontroller" + index));
+        return controller;
+    });
 
-		let controller = new CameraController(document.body);
-		controller.onchange = function (xRot, yRot) {
-			model1.rotation[0] = -xRot / 180 * 3.14;
-			model1.rotation[1] = -yRot / 180 * 3.14;
-		};
+    Promise.all([
+        Promise.all([
+            downloadModel(require("../assets/pot.tri"), gl),
+            downloadModel(require("../assets/Teapot2.json"), gl),
+            downloadModel(require("../assets/mesh.obj"), gl),
+        ]),
+        Promise.all([
+            downloadProgram(gl, require("../assets/flat.vert"), require("../assets/flat.frag")),
+            downloadProgram(gl, require("../assets/gouraud.vert"), require("../assets/gouraud.frag")),
+            downloadProgram(gl, require("../assets/phong.vert"), require("../assets/phong.frag")),
+        ])
+    ]).then(([models, programs]) => {
+        modelControllers = models.map((model, index) => {
+            let controller = new ModelController(model);
+            controller.appendToElement(document.getElementById("modelcontroller" + index));
+            return controller;
+        });
+        shaderPrograms = programs.map((program) => new Phong(gl, program));
 
-		// setInterval(() => pot.rotation[1] += 0.0314, 30);
-
-		render();
-	})
+        lights[0].position = vec3.normalize(vec3.create(), [-1, -1, -1]);
+        render();
+    })
 }
 
-
 function render() {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    let viewMatrix = camera.viewMatrix;
+    let projectionMatrix = camera.projectionMatrix;
 
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    for (const modelController of modelControllers) {
+        let useShader = shaderPrograms[modelController.shaderSelector.value];
+        useShader.renderModel(modelController.model, viewMatrix, projectionMatrix, lightAmbient, lights);
+    }
 
-	// let eye = [radius * Math.sin(theta) * Math.cos(phi), radius * Math.sin(theta) * Math.sin(phi), radius * Math.cos(theta)];
-	let eye = [0, 0, 0.1];
-	let viewMatrix = mat4.lookAt(mat4.create(), eye, at, up);
-	let projectionMatrix = mat4.ortho(mat4.create(), left, right, bottom, ytop, near, far);
-
-	pot.position[0] -= 2;
-	flatProgram.renderModel(pot, viewMatrix, projectionMatrix, lightAmbient, lightSpecular, vec3.normalize(vec3.create(), [-1, -1, -1]));
-	pot.position[0] += 2;
-	gouraudProgram.renderModel(pot, viewMatrix, projectionMatrix, lightAmbient, lightSpecular, vec3.normalize(vec3.create(), [-1, -1, -1]));
-	pot.position[0] += 2;
-	phongProgram.renderModel(pot, viewMatrix, projectionMatrix, lightAmbient, lightSpecular, vec3.normalize(vec3.create(), [-1, -1, -1]));
-	pot.position[0] -= 2;
-	window.requestAnimFrame(render);
+    window.requestAnimFrame(render);
 }
