@@ -24,6 +24,7 @@ class Model {
 			this.readObjData(modelData);
 		this.color = vec4.fromValues(0.5, 0.5, 0.4, 1);
 		this.shininess = 20;
+		this.normalize();
 	}
 
 	/**
@@ -62,6 +63,46 @@ class Model {
 		return this.nBuffer;
 	}
 
+	get frontColorBuffer() {
+		if (!this.frontColors || this.frontColors.length === 0) {
+			return null;
+		}
+		if (!this.fcBuffer) {
+			this.fcBuffer = this.gl.createBuffer();
+			this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.fcBuffer);
+			this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.frontColors), this.gl.STATIC_DRAW);
+		}
+		return this.fcBuffer;
+	}
+
+	get backColorBuffer() {
+		if (this.bcBuffer === undefined) {
+			if (!this.backColors || this.backColors.length === 0) {
+				this.bcBuffer = null;
+			}
+			else {
+				this.bcBuffer = this.gl.createBuffer();
+				this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.bcBuffer);
+				this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.backColors), this.gl.STATIC_DRAW);
+			}
+		}
+		return this.bcBuffer;
+	}
+
+	get UVBuffer() {
+		if (this.uvBuffer === undefined) {
+			if (!this.UVs || this.UVs.length === 0) {
+				this.uvBuffer = null;
+			}
+			else {
+				this.uvBuffer = this.gl.createBuffer();
+				this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.uvBuffer);
+				this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.UVs), this.gl.STATIC_DRAW);
+			}
+		}
+		return this.uvBuffer;
+	}
+
 	/**
 	 * 
 	 * @param {string} textData 
@@ -70,7 +111,7 @@ class Model {
 		this.vertexs = [];
 		this.normals = [];
 		this.frontColors = [];
-		this.baskColors = [];
+		this.backColors = [];
 		var triangles = textData.match(/^T[^T]*/gm);
 		triangles.forEach((value, index) => {
 			var data = value.match(/-?\d+(\.\d+)?/gm).map((value) => Number.parseFloat(value));
@@ -82,12 +123,12 @@ class Model {
 				}
 			}
 			if (vpos !== 0) {
-				this.frontColors[index * 9 + 0] = this.frontColors[index * 9 + 3] = this.frontColors[index * 9 + 6] = data[0];
-				this.frontColors[index * 9 + 1] = this.frontColors[index * 9 + 4] = this.frontColors[index * 9 + 7] = data[1];
-				this.frontColors[index * 9 + 2] = this.frontColors[index * 9 + 5] = this.frontColors[index * 9 + 8] = data[2];
-				this.baskColors[index * 9 + 0] = this.baskColors[index * 9 + 3] = this.baskColors[index * 9 + 6] = data[3];
-				this.baskColors[index * 9 + 1] = this.baskColors[index * 9 + 4] = this.baskColors[index * 9 + 7] = data[4];
-				this.baskColors[index * 9 + 2] = this.baskColors[index * 9 + 5] = this.baskColors[index * 9 + 8] = data[5];
+				this.frontColors[index * 9 + 0] = this.frontColors[index * 9 + 3] = this.frontColors[index * 9 + 6] = data[0] / 255;
+				this.frontColors[index * 9 + 1] = this.frontColors[index * 9 + 4] = this.frontColors[index * 9 + 7] = data[1] / 255;
+				this.frontColors[index * 9 + 2] = this.frontColors[index * 9 + 5] = this.frontColors[index * 9 + 8] = data[2] / 255;
+				this.backColors[index * 9 + 0] = this.backColors[index * 9 + 3] = this.backColors[index * 9 + 6] = data[3] / 255;
+				this.backColors[index * 9 + 1] = this.backColors[index * 9 + 4] = this.backColors[index * 9 + 7] = data[4] / 255;
+				this.backColors[index * 9 + 2] = this.backColors[index * 9 + 5] = this.backColors[index * 9 + 8] = data[5] / 255;
 			}
 		});
 	}
@@ -99,18 +140,58 @@ class Model {
 	readObjData(textData) {
 		this.vertexs = [];
 		this.normals = [];
-		let verts = textData.match(/^v [^(v|n|t|f)]*/gm);
-		let norms = textData.match(/^vn [^(v|n|t|f)]*/gm);
-		let faces = textData.match(/^f [^(v|n|t|f)]*/gm);
+		this.UVs = [];
+		let verts = textData.match(/^v [^(f-z|\n)]*/gm);
+		let norms = textData.match(/^vn [^(f-z|\n)]*/gm);
+		let uvs = textData.match(/^vt [^(f-z|\n)]*/gm);
+		let faces = textData.match(/^f [^(f-z|\n)]*/gm);
 		for (const face of faces) {
-			let data = face.match(/\d+/g).map((value) => Number.parseInt(value));
+			let data = face.match(/\d+/g).map((value) => Number.parseInt(value) - 1);
 			if (data.length === 9) {
-				this.vertexs.push(...verts[data[0] - 1].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
-				this.vertexs.push(...verts[data[3] - 1].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
-				this.vertexs.push(...verts[data[6] - 1].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
-				this.normals.push(...norms[data[2] - 1].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
-				this.normals.push(...norms[data[5] - 1].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
-				this.normals.push(...norms[data[8] - 1].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.vertexs.push(...verts[data[0]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.vertexs.push(...verts[data[3]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.vertexs.push(...verts[data[6]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[2]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[5]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[8]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.UVs.push(...uvs[data[1]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.UVs.push(...uvs[data[4]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.UVs.push(...uvs[data[7]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+			} else if (data.length === 6) {
+				this.vertexs.push(...verts[data[0]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.vertexs.push(...verts[data[2]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.vertexs.push(...verts[data[4]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[1]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[3]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[5]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+			} else if (data.length === 12) {
+				this.vertexs.push(...verts[data[0]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.vertexs.push(...verts[data[3]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.vertexs.push(...verts[data[6]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.vertexs.push(...verts[data[0]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.vertexs.push(...verts[data[6]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.vertexs.push(...verts[data[9]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[2]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[5]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[8]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[2]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[8]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.normals.push(...norms[data[11]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.UVs.push(...uvs[data[1]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.UVs.push(...uvs[data[4]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.UVs.push(...uvs[data[7]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.UVs.push(...uvs[data[1]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.UVs.push(...uvs[data[7]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+				this.UVs.push(...uvs[data[10]].match(/-?\d+(\.\d+(e-\d+)?)?/g).map((value) => Number.parseFloat(value)));
+			}
+			if (this.vertexs.length !== this.normals.length) {
+				console.log(face, data);
+				console.log(verts[data[0]]);
+				console.log(verts[data[3]]);
+				console.log(verts[data[6]]);
+				console.log(norms[data[2]]);
+				console.log(norms[data[5]]);
+				console.log(norms[data[8]]);
 			}
 		}
 	}
@@ -122,14 +203,44 @@ class Model {
 		let verts = data.vertexPositions;
 		let norms = data.vertexNormals;
 		let faces = data.indices;
-		for (const face of faces) {
-			this.vertexs.push(verts[face * 3], verts[face * 3 + 1], verts[face * 3 + 2]);
-			this.normals.push(norms[face * 3], norms[face * 3 + 1], norms[face * 3 + 2]);
+		this.frontColors = data.vertexFrontcolors;
+		this.backColors = data.vertexBackcolors;
+		this.UVs = data.vertexTextureCoords;
+		if (faces === undefined) {
+			this.vertexs = verts;
+			this.normals = norms;
+		} else {
+			for (const face of faces) {
+				this.vertexs.push(verts[face * 3], verts[face * 3 + 1], verts[face * 3 + 2]);
+				this.normals.push(norms[face * 3], norms[face * 3 + 1], norms[face * 3 + 2]);
+			}
+		}
+	}
+
+	normalize() {
+		let maxVert = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+		let minVert = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+		for (let i = 0; i < this.vertexs.length; i += 3) {
+			maxVert[0] = Math.max(this.vertexs[i + 0], maxVert[0]);
+			maxVert[1] = Math.max(this.vertexs[i + 1], maxVert[1]);
+			maxVert[2] = Math.max(this.vertexs[i + 2], maxVert[2]);
+			minVert[0] = Math.min(this.vertexs[i + 0], minVert[0]);
+			minVert[1] = Math.min(this.vertexs[i + 1], minVert[1]);
+			minVert[2] = Math.min(this.vertexs[i + 2], minVert[2]);
+		}
+		let center = [(maxVert[0] + minVert[0]) / 2, (maxVert[1] + minVert[1]) / 2, (maxVert[2] + minVert[2]) / 2];
+		let len = [maxVert[0] - minVert[0], maxVert[1] - minVert[1], maxVert[2] - minVert[2]];
+		let s = 10 / Math.max(...len);
+		for (let i = 0; i < this.vertexs.length; i += 3) {
+			this.vertexs[i + 0] = (this.vertexs[i + 0] - center[0]) * s;
+			this.vertexs[i + 1] = (this.vertexs[i + 1] - center[1]) * s;
+			this.vertexs[i + 2] = (this.vertexs[i + 2] - center[2]) * s;
 		}
 	}
 }
 
 Model.TYPE = { UNKNOW: Symbol(), TRI: Symbol(), OBJ: Symbol() };
+Model.DRAW_TYPE = { UNKNOW: Symbol(), ARRAY: Symbol(), ELEMENT: Symbol() };
 
 export default Model
 

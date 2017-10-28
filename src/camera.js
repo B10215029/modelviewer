@@ -7,7 +7,7 @@ export class Camera {
         this.center = [0, 0, 0];
         this.up = [0, 1, 0];
         this.rotation = [0, 0, 0];
-        this.scale = 1;
+        this.scale = 5.5;
         this.fovy = 45;
         this.aspect = 1;
         this.left = -1;

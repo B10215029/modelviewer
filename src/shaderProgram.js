@@ -1,5 +1,5 @@
 import Model from "./model";
-import {vec3, vec4, mat4} from "gl-matrix";
+import { vec3, vec4, mat4 } from "gl-matrix";
 import { Light } from "./light"
 
 export class Phong {
@@ -13,13 +13,18 @@ export class Phong {
 		this.program = program;
 		this.vertexPositionLocation = gl.getAttribLocation(program, "vertexPosition");
 		this.vertexNormalLocation = gl.getAttribLocation(program, "vertexNormal");
+		this.vertexUVLocation = gl.getAttribLocation(program, "vertexUV");
+		this.vertexFrontColorLocation = gl.getAttribLocation(program, "vertexFrontColor");
+		this.vertexBackColorLocation = gl.getAttribLocation(program, "vertexBackColor");
 		this.modelViewMatrixLocation = gl.getUniformLocation(program, "modelViewMatrix");
 		this.projectionMatrixLocation = gl.getUniformLocation(program, "projectionMatrix");
 		this.ambientColorLocation = gl.getUniformLocation(program, "ambientColor");
 		this.diffuseColorLocation = gl.getUniformLocation(program, "diffuseColor");
-		this.lightColorLocation = gl.getUniformLocation(program, "lightColor");
-		this.lightDirectionLocation = gl.getUniformLocation(program, "lightDirection");
 		this.shininessLocation = gl.getUniformLocation(program, "shininess");
+		this.cameraPositionLocation = gl.getUniformLocation(program, "cameraPosition");
+		this.lightCountLocation = gl.getUniformLocation(program, "lightCount");
+		this.lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
+		this.lightColorsLocation = gl.getUniformLocation(program, "lightColors");
 	}
 
 	/**
@@ -30,7 +35,7 @@ export class Phong {
 	 * @param {vec4} ambientColor 
 	 * @param {Light[]} lights
 	 */
-	renderModel(model, viewMatrix, projectionMatrix, ambientColor, lights) {
+	renderModel(model, viewMatrix, projectionMatrix, cameraPosition, ambientColor, lights) {
 		this.gl.useProgram(this.program);
 		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, model.vertexBuffer);
 		this.gl.enableVertexAttribArray(this.vertexPositionLocation);
@@ -38,15 +43,35 @@ export class Phong {
 		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, model.normalBuffer);
 		this.gl.enableVertexAttribArray(this.vertexNormalLocation);
 		this.gl.vertexAttribPointer(this.vertexNormalLocation, 3, this.gl.FLOAT, false, 0, 0)
-		
-		this.gl.uniformMatrix4fv(this.modelViewMatrixLocation, false, mat4.multiply(mat4.create(), viewMatrix, model.modelMatrix));
+		if (model.frontColorBuffer) {
+			this.gl.bindBuffer(this.gl.ARRAY_BUFFER, model.frontColorBuffer);
+			this.gl.enableVertexAttribArray(this.vertexFrontColorLocation);
+			this.gl.vertexAttribPointer(this.vertexFrontColorLocation, 3, this.gl.FLOAT, false, 0, 0)
+		}
+		else {
+			this.gl.disableVertexAttribArray(this.vertexFrontColorLocation);
+		}
+		if (model.backColorBuffer) {
+			this.gl.bindBuffer(this.gl.ARRAY_BUFFER, model.backColorBuffer);
+			this.gl.enableVertexAttribArray(this.vertexBackColorLocation);
+			this.gl.vertexAttribPointer(this.vertexBackColorLocation, 3, this.gl.FLOAT, false, 0, 0);
+		} else {
+			this.gl.disableVertexAttribArray(this.vertexBackColorLocation);
+		}
+		if (this.vertexUVLocation != -1) {
+			this.gl.disableVertexAttribArray(this.vertexUVLocation);
+		}
+
+		let mvmat = mat4.multiply(mat4.create(), viewMatrix, model.modelMatrix);
+		this.gl.uniformMatrix4fv(this.modelViewMatrixLocation, false, mvmat);
 		this.gl.uniformMatrix4fv(this.projectionMatrixLocation, false, projectionMatrix);
 		this.gl.uniform4fv(this.ambientColorLocation, ambientColor);
 		this.gl.uniform4fv(this.diffuseColorLocation, model.color);
-		this.gl.uniform4fv(this.lightColorLocation, [...lights[0].color, 1]);
-		this.gl.uniform3fv(this.lightDirectionLocation, lights[0].position);
 		this.gl.uniform1f(this.shininessLocation, model.shininess);
-
+		this.gl.uniform3fv(this.cameraPositionLocation, cameraPosition);
+		this.gl.uniform1i(this.lightCountLocation, lights.length);
+		this.gl.uniform3fv(this.lightPositionsLocation, lights.reduce((arr,val)=>arr.concat(...vec3.transformMat4(vec3.create(), val.position, viewMatrix)), []));
+		this.gl.uniform4fv(this.lightColorsLocation, lights.reduce((arr,val)=>arr.concat(val.color, 1), []));
 		this.gl.drawArrays(this.gl.TRIANGLES, 0, model.vertexs.length / 3);
 	}
 }
@@ -67,9 +92,10 @@ export function createProgram(gl, vertexShaderCode, fragmentShaderCode) {
 	gl.compileShader(vertexShader);
 
 	if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-		let msg = "Vertex shader failed to compile.  The error log is:"
-			+ "<pre>" + gl.getShaderInfoLog(vertexShader) + "</pre>";
+		let msg = "Vertex shader failed to compile.  The error log is:\n"
+			+ gl.getShaderInfoLog(vertexShader);
 		alert(msg);
+		console.warn(msg);
 		return -1;
 	}
 
@@ -78,9 +104,10 @@ export function createProgram(gl, vertexShaderCode, fragmentShaderCode) {
 	gl.compileShader(fragmentShader);
 
 	if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-		let msg = "Fragment shader failed to compile.  The error log is:"
-			+ "<pre>" + gl.getShaderInfoLog(fragmentShader) + "</pre>";
+		let msg = "Fragment shader failed to compile.  The error log is:\n"
+			+ gl.getShaderInfoLog(fragmentShader);
 		alert(msg);
+		console.warn(msg);
 		return -1;
 	}
 
@@ -90,9 +117,10 @@ export function createProgram(gl, vertexShaderCode, fragmentShaderCode) {
 	gl.linkProgram(program);
 
 	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-		let msg = "Shader program failed to link.  The error log is:"
-			+ "<pre>" + gl.getProgramInfoLog(program) + "</pre>";
+		let msg = "Shader program failed to link.  The error log is:\n"
+			+ gl.getProgramInfoLog(program);
 		alert(msg);
+		console.warn(msg);
 		return -1;
 	}
 

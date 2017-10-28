@@ -1,16 +1,64 @@
 import Model from "./model";
 import { downloadModel } from "./model";
 
+export var modelUrlMap = {
+    "ball.obj": require("../assets/ball.obj"),
+    "Renamon.obj": require("../assets/Renamon.obj"),
+    "Lumpy.obj": require("../assets/Lumpy.obj"),
+    "ball.tri": require("../assets/ball.tri"),
+    "ball2.obj": require("../assets/ball2.obj"),
+    "ballH.obj": require("../assets/ballH.obj"),
+    "box.obj": require("../assets/box.obj"),
+    "Car_road.json": require("../assets/Car_road.json"),
+    "car_roadster.tri": require("../assets/car_roadster.tri"),
+    "Church_s.json": require("../assets/Church_s.json"),
+    "Csie.json": require("../assets/Csie.json"),
+    "csie.tri": require("../assets/csie.tri"),
+    "Easter.json": require("../assets/Easter.json"),
+    "easter.tri": require("../assets/easter.tri"),
+    "Fighter.json": require("../assets/Fighter.json"),
+    "fighter.tri": require("../assets/fighter.tri"),
+    "helix.obj": require("../assets/helix.obj"),
+    "kabi.obj": require("../assets/kabi.obj"),
+    "Kangaroo.json": require("../assets/Kangaroo.json"),
+    "kangaroo.tri": require("../assets/kangaroo.tri"),
+    "Longteap.json": require("../assets/Longteap.json"),
+    "longteapot.tri": require("../assets/longteapot.tri"),
+    "manray.obj": require("../assets/manray.obj"),
+    "Mercedes.json": require("../assets/Mercedes.json"),
+    "mercedes.tri": require("../assets/mercedes.tri"),
+    "mesh.obj": require("../assets/mesh.obj"),
+    "Mig27.json": require("../assets/Mig27.json"),
+    "mig27.tri": require("../assets/mig27.tri"),
+    "neptune_reduce.obj": require("../assets/neptune_reduce.obj"),
+    "Patchair.json": require("../assets/Patchair.json"),
+    "patchair.tri": require("../assets/patchair.tri"),
+    "Plant.json": require("../assets/Plant.json"),
+    "plant.tri": require("../assets/plant.tri"),
+    "pot.tri": require("../assets/pot.tri"),
+    "squidward.obj": require("../assets/squidward.obj"),
+    "Teapot.json": require("../assets/Teapot.json"),
+    "teapot.tri": require("../assets/teapot.tri"),
+    "Teapot2.json": require("../assets/Teapot2.json"),
+    "Tomcat.json": require("../assets/Tomcat.json"),
+    "tomcat.tri": require("../assets/tomcat.tri"),
+}
+
 export class ModelController {
     constructor(model) {
         /** @type {Model} */
         this.model = model;
         this.form = document.createElement("div");
 
-        this.modelSelector = document.createElement("input");
-        this.modelSelector.setAttribute("list", "modelList");
-        this.modelButton = document.createElement("button");
-        this.modelButton.innerText = "update";
+        this.modelSelector = document.createElement("select");
+        for (const key in modelUrlMap) {
+            if (key) {
+                let opt = document.createElement("option");
+                opt.innerText = key;
+                opt.value = modelUrlMap[key];
+                this.modelSelector.appendChild(opt);
+            }
+        }
         this.textureSelector = document.createElement("input");
         this.textureSelector.setAttribute("list", "textureList");
         this.textureButton = document.createElement("button");
@@ -34,9 +82,9 @@ export class ModelController {
             this.shaderSelector.appendChild(opt);
         });
 
+
         this.form.appendChild(document.createTextNode("Model"));
         this.form.appendChild(this.modelSelector);
-        this.form.appendChild(this.modelButton);
         this.form.appendChild(document.createElement("br"));
         this.form.appendChild(document.createTextNode("Texture"));
         this.form.appendChild(this.textureSelector);
@@ -86,17 +134,8 @@ export class ModelController {
                 this.shearX.value = this.shearY.value = ev.target.value;
             this.updateModel();
         }
-        this.colorSelector.onchange = () => {
-            this.model.color[0] = parseInt(this.colorSelector.value.substring(1,3),16) / 255;
-            this.model.color[1] = parseInt(this.colorSelector.value.substring(3,5),16) / 255;
-            this.model.color[2] = parseInt(this.colorSelector.value.substring(5,7),16) / 255;
-            this.updateModel();
-        }
-        this.colorAlpha.oninput = () => {
-            this.model.color[3] = Number.parseFloat(this.colorAlpha.value);
-            this.updateModel();
-        }
-        this.modelButton.onclick = () => {
+        this.colorSelector.onchange = this.colorAlpha.oninput = () => this.updateModel();
+        this.modelSelector.onchange = () => {
             downloadModel(this.modelSelector.value, this.model.gl).then((model) => {
                 this.model = model;
                 this.updateModel();
@@ -125,6 +164,10 @@ export class ModelController {
         this.model.scale[2] = Math.pow(2, Number.parseFloat(this.scaleZ.value));
         this.model.shear[0] = Number.parseFloat(this.shearX.value);
         this.model.shear[1] = Number.parseFloat(this.shearY.value);
+                this.model.color[0] = parseInt(this.colorSelector.value.substring(1, 3), 16) / 255;
+                this.model.color[1] = parseInt(this.colorSelector.value.substring(3, 5), 16) / 255;
+                this.model.color[2] = parseInt(this.colorSelector.value.substring(5, 7), 16) / 255;
+                this.model.color[3] = Number.parseFloat(this.colorAlpha.value);
     }
 
     updateForm() {

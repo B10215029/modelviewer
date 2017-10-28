@@ -10,31 +10,16 @@
 <body>
     <canvas id="glcanvas" style="border: 1px solid black;" width="900" height="900"></canvas>
     <table>
-        <tr>
-            <td style="border: 1px solid black;" id="modelcontroller0">
-            </td>
-            <td style="border: 1px solid black;" id="modelcontroller1">
-            </td>
-            <td style="border: 1px solid black;" id="modelcontroller2">
-            </td>
-        </tr>
-        <tr>
-            <td style="border: 1px solid black;" id="lightcontroller0">
-                <br>Rotation X<input type="range" id="rotxbar" min="-3.14" max="3.14" step="0.1">
-                <br>Rotation Y<input type="range" id="rotybar" min="-3.14" max="3.14" step="0.1">
-                <br>Rotation Z<input type="range" id="rotzbar" min="-3.14" max="3.14" step="0.1">
-                <br><input type="range" id="scabar">
-            </td>
-            <td style="border: 1px solid black;" id="lightcontroller1">
-                <br>Rotation X<input type="range" id="rotxbar" min="-3.14" max="3.14" step="0.1">
-                <br>Rotation Y<input type="range" id="rotybar" min="-3.14" max="3.14" step="0.1">
-                <br>Rotation Z<input type="range" id="rotzbar" min="-3.14" max="3.14" step="0.1">
-                <br><input type="range" id="scabar">
+        <tr id="modelcontroller"></tr>
+        <tr id="lightcontroller">
+            <td style="border: 1px solid black;">
+                <br>Ambient<input type="color" id="ambient" value="#080808">
+                <br><input type="button" value="Reset Camera" id="resercamera">
             </td>
         </tr>
     </table>
     <datalist id="modelList">
-        <option value="ball.tri">123</option>
+        <option value="ball.tri"></option>
         <option value="car_roadster.tri"></option>
         <option value="csie.tri"></option>
         <option value="easter.tri"></option>
@@ -53,6 +38,7 @@
         <option value="tomcat.tri"></option>
         <option value="Teapot.json"></option>
         <option value="mesh.obj"></option>
+        <option value="Car_road.json"></option>
     </datalist>
     <datalist id="textureList">
         <option value="fdfFirefox"></option>
