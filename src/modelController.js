@@ -75,7 +75,7 @@ export class ModelController {
         this.colorAlpha.step = 0.01;
         this.colorAlpha.value = 1;
         this.shaderSelector = document.createElement("select");
-        ["Flat", "Gouraud", "Phong"].forEach((value, index) => {
+        ["Flat", "Gouraud", "Phong", "Toon"].forEach((value, index) => {
             let opt = document.createElement("option");
             opt.innerText = value;
             opt.value = index;

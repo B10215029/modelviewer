@@ -109,6 +109,7 @@ window.onload = () => {
             downloadProgram(gl, require("../assets/shader/flat.vert"), require("../assets/shader/flat.frag")),
             downloadProgram(gl, require("../assets/shader/gouraud.vert"), require("../assets/shader/gouraud.frag")),
             downloadProgram(gl, require("../assets/shader/phong.vert"), require("../assets/shader/phong.frag")),
+            downloadProgram(gl, require("../assets/shader/phong.vert"), require("../assets/shader/toon.frag")),
         ])
     ]).then(([models, programs]) => {
         modelControllers = models.map((model, index) => {
