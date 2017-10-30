@@ -17,15 +17,15 @@ uniform int lightCount;
 uniform vec3 lightPositions[MAX_LIGHT_COUNT];
 uniform vec4 lightColors[MAX_LIGHT_COUNT];
 
-// uniform sampler2D mainTexture;
-// uniform int useTexture;
+uniform sampler2D mainTexture;
+uniform int useTexture;
 
 void main() {
     vec3 U = dFdx(fragPosition);
     vec3 V = dFdy(fragPosition);
     vec3 N = normalize(cross(U,V));
 
-    vec3 faceColor = frontColor;
+    vec3 faceColor = useTexture == 1 ? texture2D(mainTexture, fragUV).rgb : frontColor;
     if (dot(normalize(cameraPosition - fragPosition), N) < 0.0){
         N = -N;
         faceColor = backColor;

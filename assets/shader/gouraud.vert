@@ -17,7 +17,9 @@ uniform int lightCount;
 uniform vec3 lightPositions[MAX_LIGHT_COUNT];
 uniform vec4 lightColors[MAX_LIGHT_COUNT];
 
+uniform int useTexture;
 varying vec4 fragColor;
+varying vec2 fragUV;
 
 void main() {
     vec3 normal = normalize(mat3(modelViewMatrix) * vertexNormal);
@@ -27,6 +29,8 @@ void main() {
         normal = -normal;
         faceColor = vertexBackColor;
     }
+    if (useTexture == 1)
+        fragUV = vertexUV;
 
     fragColor = ambientColor;
     for (int i = 0; i < MAX_LIGHT_COUNT; i++) {

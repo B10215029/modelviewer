@@ -25,6 +25,14 @@ export class Phong {
 		this.lightCountLocation = gl.getUniformLocation(program, "lightCount");
 		this.lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
 		this.lightColorsLocation = gl.getUniformLocation(program, "lightColors");
+		this.mainTextureLocation = gl.getUniformLocation(program, "mainTexture");
+		this.useTextureLocation = gl.getUniformLocation(program, "useTexture");
+
+		this.defaultTexture = gl.createTexture();
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.defaultTexture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([ 255, 0, 255, 255 ]));
+		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 
 	/**
@@ -43,6 +51,8 @@ export class Phong {
 		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, model.normalBuffer);
 		this.gl.enableVertexAttribArray(this.vertexNormalLocation);
 		this.gl.vertexAttribPointer(this.vertexNormalLocation, 3, this.gl.FLOAT, false, 0, 0)
+		this.gl.activeTexture(this.gl.TEXTURE0);
+		this.gl.bindTexture(this.gl.TEXTURE_2D, this.defaultTexture);
 		if (model.frontColorBuffer) {
 			this.gl.bindBuffer(this.gl.ARRAY_BUFFER, model.frontColorBuffer);
 			this.gl.enableVertexAttribArray(this.vertexFrontColorLocation);
@@ -58,8 +68,18 @@ export class Phong {
 		} else {
 			this.gl.disableVertexAttribArray(this.vertexBackColorLocation);
 		}
-		if (this.vertexUVLocation != -1) {
+		if (model.texture && model.UVBuffer) {
+			this.gl.bindBuffer(this.gl.ARRAY_BUFFER, model.UVBuffer);
+			this.gl.enableVertexAttribArray(this.vertexUVLocation);
+			this.gl.vertexAttribPointer(this.vertexUVLocation, 2, this.gl.FLOAT, false, 0, 0);
+			this.gl.activeTexture(this.gl.TEXTURE0);
+			this.gl.bindTexture(this.gl.TEXTURE_2D, model.texture);
+			this.gl.uniform1i(this.mainTextureLocation, 0);
+			this.gl.uniform1i(this.useTextureLocation, 1);
+		}
+		else {
 			this.gl.disableVertexAttribArray(this.vertexUVLocation);
+			this.gl.uniform1i(this.useTextureLocation, 0);
 		}
 
 		let mvmat = mat4.multiply(mat4.create(), viewMatrix, model.modelMatrix);

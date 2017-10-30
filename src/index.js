@@ -37,7 +37,8 @@ var lightAmbient = [0.2, 0.2, 0.2, 1.0];
 
 var defaultModelList = [
     "csie.tri",
-    "car_roadster.tri"
+    "car_roadster.tri",
+    "Teapot2.json",
 ];
 
 window.onload = () => {

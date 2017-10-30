@@ -103,6 +103,39 @@ class Model {
 		return this.uvBuffer;
 	}
 
+	get texture() {
+		if (!this._texture) {
+			return null;
+		}
+		return this._texture;
+	}
+
+	set texture(url) {
+		if (url === "") {
+			this._texture = null;
+		} else {
+			fetch(url)
+				.then(response => response.blob())
+				.then(data => {
+					let img = new Image();
+					img.src = URL.createObjectURL(data);
+					img.onload = () => {
+						if (this._texture)
+							this.gl.deleteTexture(this._texture);
+						this._texture = this.gl.createTexture();
+						this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+						this.gl.bindTexture(this.gl.TEXTURE_2D, this._texture);
+						this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, img);
+						this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+						this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+						// this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_NEAREST);
+						// this.gl.generateMipmap(this.gl.TEXTURE_2D);
+						this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+					}
+				})
+		}
+	}
+
 	/**
 	 * 
 	 * @param {string} textData 
@@ -199,20 +232,25 @@ class Model {
 	readJSONData(textData) {
 		this.vertexs = [];
 		this.normals = [];
+		this.UVs = [];
 		let data = JSON.parse(textData);
 		let verts = data.vertexPositions;
 		let norms = data.vertexNormals;
+		let uvs = data.vertexTextureCoords;
 		let faces = data.indices;
 		this.frontColors = data.vertexFrontcolors;
 		this.backColors = data.vertexBackcolors;
-		this.UVs = data.vertexTextureCoords;
 		if (faces === undefined) {
 			this.vertexs = verts;
 			this.normals = norms;
+			this.UVs = uvs;
 		} else {
 			for (const face of faces) {
 				this.vertexs.push(verts[face * 3], verts[face * 3 + 1], verts[face * 3 + 2]);
 				this.normals.push(norms[face * 3], norms[face * 3 + 1], norms[face * 3 + 2]);
+				if (uvs) {
+					this.UVs.push(uvs[face * 2], uvs[face * 2 + 1]);
+				}
 			}
 		}
 	}

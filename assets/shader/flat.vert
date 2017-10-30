@@ -8,6 +8,7 @@ attribute vec3 vertexBackColor;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
+uniform int useTexture;
 
 varying vec3 fragPosition;
 varying vec3 fragNormal;
@@ -18,7 +19,8 @@ varying vec3 backColor;
 void main() {
     fragPosition = vec3(modelViewMatrix * vec4(vertexPosition, 1.0));
     fragNormal = normalize(mat3(modelViewMatrix) * vertexNormal);
-    fragUV = vertexUV;
+    if (useTexture == 1)
+        fragUV = vertexUV;
     frontColor = vertexFrontColor;
     backColor = vertexBackColor;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(vertexPosition, 1.0);

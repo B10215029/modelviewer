@@ -16,12 +16,12 @@ uniform int lightCount;
 uniform vec3 lightPositions[MAX_LIGHT_COUNT];
 uniform vec4 lightColors[MAX_LIGHT_COUNT];
 
-// uniform sampler2D mainTexture;
-// uniform int useTexture;
+uniform sampler2D mainTexture;
+uniform int useTexture;
 
 void main() {
     vec3 normal = fragNormal;
-    vec3 faceColor = frontColor;
+    vec3 faceColor = useTexture == 1 ? texture2D(mainTexture, fragUV).rgb : frontColor;
     if (dot(normalize(cameraPosition - fragPosition), normal)<0.0){
         normal = -normal;
         faceColor = backColor;
