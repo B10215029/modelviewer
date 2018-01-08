@@ -16,8 +16,8 @@ module.exports = {
     },
     module: {
         loaders: [
-            { test: /\.jsx?$/, exclude: /node_modules/, loader: "babel-loader", query: { presets: ['es2015'] } },
-            { test: /gl-matrix/, loader: "babel-loader", query: { presets: ['es2015'] } },
+            { test: /\.jsx?$/, exclude: /node_modules/, loader: "babel-loader", query: { presets: ['env'] } },
+            { test: /gl-matrix/, loader: "babel-loader", query: { presets: ['env'] } },
             { test: /\.html?$/, loader: "file-loader?name=[name].[ext]" },
             { test: /assets(?=\/|\\)/, loader: "file-loader?name=assets/[name].[ext]" },
         ],
