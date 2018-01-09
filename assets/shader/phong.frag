@@ -32,7 +32,7 @@ void main() {
         if (i < lightCount) {
             vec3 lightDirection = normalize(lightPositions[i] - fragPosition);
             float kd = max(dot(lightDirection, normal), 0.0);
-            vec4 diffuse = kd * mix(vec4(faceColor, 1), diffuseColor, diffuseColor.a) * lightColors[i];
+            vec4 diffuse = kd * mix(vec4(faceColor, 1), diffuseColor, diffuseColor.a * 0.) * lightColors[i];
 
             vec3 reflection = normalize(dot(lightDirection, normal) * normal * 2.0 - lightDirection);
             float ks = pow(max(dot(reflection, normalize(cameraPosition - fragPosition)), 0.0), shininess);

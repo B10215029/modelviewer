@@ -7,12 +7,12 @@ export default class Accessor {
      * @param {*} data 
      */
     constructor(gltf, data) {
-        this.gltf = gltf;
-        this.bufferView = this.gltf.bufferViews[data.bufferView];
+        // this.gltf = gltf;
+        this.bufferView = gltf.bufferViews[data.bufferView];
         this.byteOffset = data.byteOffset || 0;
         this.componentType = data.componentType;
         this.normalized = data.normalized || false;
-        this.count = data.count;
+        this.count = data.count || 0;
         this.type = data.type;
         this.max = data.max;
         this.min = data.min;
@@ -21,6 +21,23 @@ export default class Accessor {
         // this.extensions = data.extensions;
         // this.extras = data.extras;
         this.loadFinish = this.bufferView.loadFinish;
+    }
+
+    /**
+     * @param {WebGL2RenderingContext} gl 
+     */
+    SetVertexAttribute(gl, index) {
+        gl.bindBuffer(this.bufferView.target, this.bufferView.GetVertexBuffer(gl));
+        gl.vertexAttribPointer(index, Accessor.AttributeTypeSize[this.type], this.componentType, this.normalized, this.bufferView.byteStride, this.byteOffset);
+        gl.enableVertexAttribArray(index);
+        gl.bindBuffer(this.bufferView.target, null);
+    }
+
+    /**
+     * @param {WebGL2RenderingContext} gl 
+     */
+    BindBuffer(gl) {
+        gl.bindBuffer(this.bufferView.target, this.bufferView.GetVertexBuffer(gl));
     }
 }
 
@@ -41,4 +58,14 @@ Accessor.AttributeType = {
     MAT2 : "MAT2",
     MAT3 : "MAT3",
     MAT4 : "MAT4",
+}
+
+Accessor.AttributeTypeSize = {
+    SCALAR : 1,
+    VEC2 : 2,
+    VEC3 : 3,
+    VEC4 : 4,
+    MAT2 : 4,
+    MAT3 : 9,
+    MAT4 : 16,
 }

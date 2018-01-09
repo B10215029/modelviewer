@@ -72,7 +72,7 @@ export default class GLTF {
             /** @type {Scene[]} */
             this.scenes = data.scenes.map((value) => new Scene(this, value));
         }
-        if (this.scene) {
+        if (data.scene !== undefined) {
             /** @type {Scene} */
             this.scene = this.scenes[data.scene];
             loadList.push(this.scene.loadFinish);

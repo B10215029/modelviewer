@@ -1,16 +1,21 @@
+import { ShaderProgram } from "./shaderProgram";
+import Scene from "./gltf/scene";
+import Camera from "./gltf/camera";
+import Node from "./gltf/node";
+import Mesh from "./gltf/mesh";
+
 import Model from "./model";
 import { vec3, vec4, mat4 } from "gl-matrix";
 import { Light } from "./light"
 
-export class Phong {
+export class Phong extends ShaderProgram {
 	/**
 	 * 
-	 * @param {WebGLRenderingContext} gl 
+	 * @param {WebGL2RenderingContext} gl 
 	 * @param {WebGLProgram} program 
 	 */
 	constructor(gl, program) {
-		this.gl = gl;
-		this.program = program;
+		super(gl, program);
 		this.vertexPositionLocation = gl.getAttribLocation(program, "vertexPosition");
 		this.vertexNormalLocation = gl.getAttribLocation(program, "vertexNormal");
 		this.vertexUVLocation = gl.getAttribLocation(program, "vertexUV");
@@ -27,11 +32,12 @@ export class Phong {
 		this.lightColorsLocation = gl.getUniformLocation(program, "lightColors");
 		this.mainTextureLocation = gl.getUniformLocation(program, "mainTexture");
 		this.useTextureLocation = gl.getUniformLocation(program, "useTexture");
+		this.key = Symbol();
 
 		this.defaultTexture = gl.createTexture();
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, this.defaultTexture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([ 255, 0, 255, 255 ]));
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 255, 255]));
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 
@@ -90,72 +96,95 @@ export class Phong {
 		this.gl.uniform1f(this.shininessLocation, model.shininess);
 		this.gl.uniform3fv(this.cameraPositionLocation, cameraPosition);
 		this.gl.uniform1i(this.lightCountLocation, lights.length);
-		this.gl.uniform3fv(this.lightPositionsLocation, lights.reduce((arr,val)=>arr.concat(...vec3.transformMat4(vec3.create(), val.position, viewMatrix)), []));
-		this.gl.uniform4fv(this.lightColorsLocation, lights.reduce((arr,val)=>arr.concat(val.color, 1), []));
+		this.gl.uniform3fv(this.lightPositionsLocation, lights.reduce((arr, val) => arr.concat(...vec3.transformMat4(vec3.create(), val.position, viewMatrix)), []));
+		this.gl.uniform4fv(this.lightColorsLocation, lights.reduce((arr, val) => arr.concat(val.color, 1), []));
 		this.gl.drawArrays(this.gl.TRIANGLES, 0, model.vertexs.length / 3);
 	}
-}
 
-/**
- * 
- * @param {WebGLRenderingContext} gl 
- * @param {string} vertexShaderCode 
- * @param {string} fragmentShaderCode 
- * @return {WebGLProgram}
- */
-export function createProgram(gl, vertexShaderCode, fragmentShaderCode) {
-	let vertexShader;
-	let fragmentShader;
-
-	vertexShader = gl.createShader(gl.VERTEX_SHADER);
-	gl.shaderSource(vertexShader, vertexShaderCode);
-	gl.compileShader(vertexShader);
-
-	if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-		let msg = "Vertex shader failed to compile.  The error log is:\n"
-			+ gl.getShaderInfoLog(vertexShader);
-		alert(msg);
-		console.warn(msg);
-		return -1;
+	/**
+	 * 
+	 * @param {Scene} scene 
+	 * @param {Node} camera 
+	 */
+	renderScene(scene, view, lights) {
+		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+		for (const node of scene.nodes) {
+			this.renderNode(node, mat4.create(), view, lights);
+		}
 	}
 
-	fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-	gl.shaderSource(fragmentShader, fragmentShaderCode);
-	gl.compileShader(fragmentShader);
-
-	if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-		let msg = "Fragment shader failed to compile.  The error log is:\n"
-			+ gl.getShaderInfoLog(fragmentShader);
-		alert(msg);
-		console.warn(msg);
-		return -1;
+	/**
+	 * 
+	 * @param {Node} node 
+	 */
+	renderNode(node, parentModelMatrix, view, lights) {
+		const modelMatrix = mat4.multiply(mat4.create(), parentModelMatrix, node.matrix);
+		if (node.children) {
+			for (const children of node.children) {
+				this.renderNode(children, modelMatrix, view, lights);
+			}
+		}
+		if (node.mesh) {
+			this.renderMesh(node.mesh, modelMatrix, view, lights);
+		}
 	}
 
-	let program = gl.createProgram();
-	gl.attachShader(program, vertexShader);
-	gl.attachShader(program, fragmentShader);
-	gl.linkProgram(program);
+	/**
+	 * 
+	 * @param {Mesh} mesh 
+	 * @param {mat4} modelMatrix 
+	 * @param {Node} view 
+	 */
+	renderMesh(mesh, modelMatrix, view, lights) {
+		// console.log(mesh);
+        // console.log(view);
+		this.gl.useProgram(this.program);
+		for (const primitive of mesh.primitives) {
+			this.gl.bindVertexArray(primitive.GetVertexArray(this.gl, this.key, (attributes) => {
+				if (attributes.POSITION) {
+					attributes.POSITION.SetVertexAttribute(this.gl, this.vertexPositionLocation);
+				}
+				if (attributes.NORMAL) {
+					attributes.NORMAL.SetVertexAttribute(this.gl, this.vertexNormalLocation);
+				}
+				if (attributes.TEXCOORD_0) {
+					attributes.TEXCOORD_0.SetVertexAttribute(this.gl, this.vertexUVLocation);
+				}
+				if (attributes.COLOR_0) {
+					attributes.COLOR_0.SetVertexAttribute(this.gl, this.vertexFrontColorLocation);
+				} else {
+					this.gl.disableVertexAttribArray(this.vertexFrontColorLocation);
+				}
+				this.gl.disableVertexAttribArray(this.vertexBackColorLocation);
+				if (primitive.indices) {
+					primitive.indices.BindBuffer(this.gl);
+				} 
+			}));
 
-	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-		let msg = "Shader program failed to link.  The error log is:\n"
-			+ gl.getProgramInfoLog(program);
-		alert(msg);
-		console.warn(msg);
-		return -1;
+			let viewMatrix = view ? mat4.invert(mat4.create(), view.worldMatrix) : mat4.create();
+			let projectionMatrix = (view && view.camera) ? view.camera.projectionMatrix : mat4.create();
+			this.gl.uniformMatrix4fv(this.modelViewMatrixLocation, false, mat4.multiply(mat4.create(), viewMatrix, modelMatrix));
+			this.gl.uniformMatrix4fv(this.projectionMatrixLocation, false, projectionMatrix);
+
+			this.gl.uniform4fv(this.ambientColorLocation, [0.1, 0.1, 0.1, 1]);
+			this.gl.uniform1f(this.shininessLocation, 30);
+			this.gl.uniform4fv(this.diffuseColorLocation, primitive.material.pbrMetallicRoughness.baseColorFactor);
+			this.gl.uniform3fv(this.cameraPositionLocation, view.translation);
+			this.gl.uniform1i(this.lightCountLocation, lights.length);
+			this.gl.uniform3fv(this.lightPositionsLocation, lights.reduce((arr, val) => arr.concat(...vec3.transformMat4(vec3.create(), val.position, viewMatrix)), []));
+			this.gl.uniform4fv(this.lightColorsLocation, lights.reduce((arr, val) => arr.concat(val.color, 1), []));
+
+			this.gl.uniform1i(this.useTextureLocation, 1);
+			this.gl.activeTexture(this.gl.TEXTURE0);
+			// this.gl.bindTexture(this.gl.TEXTURE_2D, this.defaultTexture);
+			primitive.material.pbrMetallicRoughness.baseColorTexture.index.BindTexture(this.gl);
+
+			if (primitive.indices) {
+				this.gl.drawElements(primitive.mode, primitive.indices.count, primitive.indices.componentType, primitive.indices.byteOffset);
+			} else {
+				this.gl.drawArrays(primitive.mode, primitive.attributes.POSITION.byteOffset, primitive.attributes.POSITION.count);
+			}
+			this.gl.bindVertexArray(null);
+		}
 	}
-
-	return program;
-}
-
-/**
- * download and create program from URL
- * @param {WebGLRenderingContext} gl 
- * @param {string} vertexShaderURL 
- * @param {string} fragmentShaderURL 
- * @return {Promise<WebGLProgram>}
- */
-export function downloadProgram(gl, vertexShaderURL, fragmentShaderURL) {
-	return Promise.all([fetch(vertexShaderURL), fetch(fragmentShaderURL)])
-		.then(response => Promise.all([response[0].text(), response[1].text()]))
-		.then(texts => createProgram(gl, ...texts));
 }

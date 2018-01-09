@@ -55,7 +55,7 @@ export function createProgram(gl, vertexShaderCode, fragmentShaderCode) {
 	gl.attachShader(program, fragmentShader);
 	gl.linkProgram(program);
 
-	log = gl.getShaderInfoLog(program);
+	log = gl.getProgramInfoLog(program);
 	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
 		console.warn("Shader program failed to link.\n" + log);
 		return;

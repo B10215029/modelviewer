@@ -7,13 +7,39 @@ export default class Texture {
      * @param {any} data 
      */
     constructor(gltf, data) {
-        this.gltf = gltf;
+        // this.gltf = gltf;
         this.sampler = data.sampler;
-        this.source = this.gltf.images[data.source];
+        this.source = gltf.images[data.source];
         // this.name = data.name;
         // this.extensions = data.extensions;
         // this.extras = data.extras;
         this.loadFinish = this.source.loadFinish;
+    }
+
+    /**
+     * 
+     * @param {WebGL2RenderingContext} gl 
+     */
+    GetTextureIndex(gl) {
+        if (!this.textureId) {
+            this.textureId = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, this.textureId);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.source.data);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+        }
+        return this.textureId;
+    }
+
+    /**
+     * 
+     * @param {WebGL2RenderingContext} gl 
+     */
+    BindTexture(gl) {
+        gl.bindTexture(gl.TEXTURE_2D, this.GetTextureIndex(gl));
+        if (this.sampler) {
+            gl.bindSampler(this.GetTextureIndex(gl), this.sampler.GetSamplerIndex(gl));
+        }
     }
 }
 
@@ -24,16 +50,17 @@ export class RawImage {
      * @param {any} data 
      */
     constructor(gltf, data) {
-        this.gltf = gltf;
+        // this.gltf = gltf;
         this.uri = data.uri;
-        this.bufferView = data.bufferView ? this.gltf.bufferViews[data.bufferView] : undefined;
+        this.bufferView = data.bufferView ? gltf.bufferViews[data.bufferView] : undefined;
         this.mimeType = data.mimeType;
         // this.name = data.name;
         // this.extensions = data.extensions;
         // this.extras = data.extras;
         if (this.uri) {
             this.data = new Image();
-            this.data.src = this.gltf.baseUri + this.uri;
+            this.data.crossOrigin = "Anonymous";
+            this.data.src = gltf.baseUri + this.uri;
             this.loadFinish = new Promise((resolve) => this.data.onload = resolve);
         } else {
             this.loadFinish = this.bufferView.loadFinish
@@ -53,7 +80,7 @@ export class Sampler {
      * @param {any} data 
      */
     constructor(gltf, data) {
-        this.gltf = gltf;
+        // this.gltf = gltf;
         this.magFilter = data.magFilter;
         this.minFilter = data.minFilter;
         this.wrapS = data.wrapS || Sampler.WrapMode.REPEAT;
@@ -62,6 +89,21 @@ export class Sampler {
         // this.extensions = data.extensions;
         // this.extras = data.extras;
         // this.loadFinish = this.loadFinish;
+    }
+
+    /**
+     * 
+     * @param {WebGL2RenderingContext} gl 
+     */
+    GetSamplerIndex(gl) {
+        if (!this.samplerIndex) {
+            this.samplerIndex = gl.createSampler();
+            gl.samplerParameteri(this.sampler, gl.TEXTURE_MIN_FILTER, this.minFilter);
+            gl.samplerParameteri(this.sampler, gl.TEXTURE_MAG_FILTER, this.magFilter);
+            gl.samplerParameteri(this.sampler, gl.TEXTURE_WRAP_S, this.wrapS);
+            gl.samplerParameteri(this.sampler, gl.TEXTURE_WRAP_T, this.wrapT);
+        }
+        return this.samplerIndex;
     }
 }
 
@@ -87,8 +129,8 @@ export class TextureInfo {
      * @param {any} data 
      */
     constructor(gltf, data) {
-        this.gltf = gltf;
-        this.index = this.gltf.textures[data.index];
+        // this.gltf = gltf;
+        this.index = gltf.textures[data.index];
         this.texCoord = data.texCoord || 0;
         // this.extensions = data.extensions;
         // this.extras = data.extras;

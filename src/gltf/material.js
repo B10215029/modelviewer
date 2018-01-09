@@ -12,7 +12,7 @@ export default class Material {
      */
     constructor(gltf, data) {
         const loadList = [];
-        this.gltf = gltf;
+        // this.gltf = gltf;
         if (data.pbrMetallicRoughness) {
             this.pbrMetallicRoughness = new PbrMetallicRoughness(gltf, data.pbrMetallicRoughness);
             loadList.push(this.pbrMetallicRoughness.loadFinish);
@@ -72,18 +72,22 @@ export class PbrMetallicRoughness {
      * @param {*} data 
      */
     constructor(gltf, data) {
-        this.gltf = gltf;
+        const loadList = [];
+        // this.gltf = gltf;
         this.baseColorFactor = data.baseColorFactor || [1, 1, 1, 1];
         if (data.baseColorTexture) {
             this.baseColorTexture = new TextureInfo(gltf, data.baseColorTexture);
+            loadList.push(this.baseColorTexture.loadFinish);
         }
         this.metallicFactor = data.metallicFactor !== undefined ? data.metallicFactor : 1;
         this.roughnessFactor = data.roughnessFactor !== undefined ? data.roughnessFactor : 1;
         if (data.metallicRoughnessTexture) {
             this.metallicRoughnessTexture = new TextureInfo(gltf, data.metallicRoughnessTexture);
+            loadList.push(this.metallicRoughnessTexture.loadFinish);
         }
         // this.extensions = data.extensions;
         // this.extras = data.extras;
+        this.loadFinish = Promise.all(loadList);
     }
 }
 
