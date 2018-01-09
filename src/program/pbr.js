@@ -1,9 +1,9 @@
 import { ShaderProgram } from "./shaderProgram";
-import Scene from "./gltf/scene";
-import Node from "./gltf/node";
-import Mesh from "./gltf/mesh";
+import Scene from "../gltf/scene";
+import Node from "../gltf/node";
+import Mesh from "../gltf/mesh";
 import { vec3, vec4, mat4 } from "gl-matrix";
-import { Light } from "./light"
+import { Light } from "../light"
 
 export class PhysicallyBasedRendering extends ShaderProgram {
 	/**

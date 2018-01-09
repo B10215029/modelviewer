@@ -13,7 +13,7 @@ export default class BufferView {
         this.byteLength = data.byteLength;
         this.byteOffset = data.byteOffset || 0;
         this.byteStride = data.byteStride || 0;
-        this.target = data.target;
+        this.target = data.target || BufferView.Target.ARRAY_BUFFER;
         // this.name = data.name;
         // this.extensions = data.extensions;
         // this.extras = data.extras;
@@ -26,7 +26,7 @@ export default class BufferView {
      * @param {WebGL2RenderingContext} gl 
      */
     GetVertexBuffer(gl) {
-        if (this.vertexBuffer === undefined && this.target) {
+        if (this.vertexBuffer === undefined) {
             this.vertexBuffer = gl.createBuffer();
             gl.bindBuffer(this.target, this.vertexBuffer);
             gl.bufferData(this.target, this.data, gl.STATIC_DRAW);
@@ -36,7 +36,7 @@ export default class BufferView {
     }
 }
 
-export var BufferViewTarget = {
+BufferView.Target = {
     ARRAY_BUFFER: 34962,
     ELEMENT_ARRAY_BUFFER: 34963,
 }

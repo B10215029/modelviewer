@@ -3,7 +3,6 @@ precision highp float;
 
 uniform mat4 u_ModelView;
 uniform mat4 u_Persp;
-uniform mat4 u_InvTrans;
 
 in vec3 Position;
 in vec3 Normal;
@@ -21,5 +20,4 @@ void main(void) {
     gl_Position = u_Persp * u_ModelView * vec4(Position, 1.0);
     fs_Texcoord = Texcoord;
     fs_Depth = ((gl_Position.z / gl_Position.w));
-    // gl_Position = vec4(Position, 1.0);
 }

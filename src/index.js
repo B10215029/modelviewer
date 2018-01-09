@@ -4,30 +4,36 @@ import "./fetch.js";
 import "gl-matrix";
 import { vec3, vec4, mat4, quat } from "gl-matrix"
 import { downloadGLTF } from "./gltf"
-import { downloadProgram } from "./shaderProgram";
-import { Phong } from "./phong";
 import Scene from "./gltf/scene";
 import Node from "./gltf/node";
 import Camera from "./gltf/camera";
+
+import { downloadProgram } from "./program/shaderProgram";
+import { Phong } from "./program/phong";
+import { DrawTexture } from "./program/drawTexture";
+import { GBuffer } from "./program/gBuffer";
+import { Deferred } from "./program/deferred";
+
 import { Light } from "./light"
 import { LightController } from "./lightController"
-import { DrawTexture } from "./drawTexture";
-import { Deferred } from "./deferred";
 
 /** @type {WebGL2RenderingContext} */
 var gl;
-/** @type {Phong} */
-var phongProgram;
-/** @type {DrawTexture} */
-var textureProgram;
-/** @type {Deferred} */
-var deferredProgram;
 /** @type {Scene} */
 var scene;
 /** @type {Node} */
 var view;
 /** @type {Light[]} */
 var lights = [];
+
+/** @type {Phong} */
+var phongProgram;
+/** @type {DrawTexture} */
+var textureProgram;
+/** @type {GBuffer} */
+var gbufferProgram;
+/** @type {Deferred} */
+var deferredProgram;
 
 window.onload = () => {
     let canvas = document.getElementById("glcanvas");
@@ -63,47 +69,65 @@ window.onload = () => {
         e.preventDefault();
     };
 
-    const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf").then(data => {
-        console.log(data);
-        scene = data.scene;
-        const camera = new Camera(data, {
-            "name": "Finite perspective camera",
-            "type": "perspective",
-            "perspective": {
-                "aspectRatio": canvas.width / canvas.height,
-                "yfov": 37 / 180 * Math.PI,
-                // "yfov": 0.660593,
-                "zfar": 100,
-                "znear": 0.01
-            }
+    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf")
+    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxAnimated/glTF/BoxAnimated.gltf")
+    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf")
+    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/2CylinderEngine/glTF/2CylinderEngine.gltf")
+    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BarramundiFish/glTF/BarramundiFish.gltf")
+    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBox/glTF/BoomBox.gltf")
+    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBoxWithAxes/glTF/BoomBoxWithAxes.gltf")
+    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxTexturedNonPowerOfTwo/glTF/BoxTexturedNonPowerOfTwo.gltf")
+    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxVertexColors/glTF/BoxVertexColors.gltf")
+    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BrainStem/glTF/BrainStem.gltf")
+    const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Buggy/glTF/Buggy.gltf")
+        .then(data => {
+            console.log(data);
+            scene = data.scene;
+            const camera = new Camera(data, {
+                "name": "Finite perspective camera",
+                "type": "perspective",
+                "perspective": {
+                    "aspectRatio": canvas.width / canvas.height,
+                    "yfov": 37 / 180 * Math.PI,
+                    // "yfov": 0.660593,
+                    "zfar": 100,
+                    "znear": 0.01
+                }
+            });
+            view = new Node(data, { camera: (data.cameras || (data.cameras = [])).push(camera) - 1 });
+            view.translation = vec3.fromValues(0, 0, 5);
+            view = scene.nodes[0];
         });
-        view = new Node(data, { camera: (data.cameras || (data.cameras = [])).push(camera) - 1 });
-        view.translation = vec3.fromValues(0, 0, 5);
-        // data.nodes.push(view);
-    });
-    // downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxAnimated/glTF/BoxAnimated.gltf").then(data => console.log(data));
-    const loadProgram = downloadProgram(gl, require("../shader/phong.vert"), require("../shader/phong.frag")).then(program => {
-        phongProgram = new Phong(gl, program);
-    });
-    const loadTextureProgram = downloadProgram(gl, require("../shader/drawTexture.vert"), require("../shader/drawTexture.frag")).then(program => {
-        textureProgram = new DrawTexture(gl, program);
-    });
-    const loadDeferredProgram = downloadProgram(gl, require("../shader/deferred.vert"), require("../shader/deferred.frag")).then(program => {
-        deferredProgram = new Deferred(gl, program, canvas.width, canvas.height);
-    });
-    // downloadProgram(gl, require("../shader/pbr-vert.glsl"), require("../shader/pbr-frag.glsl"));
-    Promise.all([loadScene, loadProgram, loadTextureProgram, loadDeferredProgram]).then(render);
+    Promise.all([
+        loadScene,
+        downloadProgram(gl, require("../shader/phong.vert"), require("../shader/phong.frag"))
+            .then(program => phongProgram = new Phong(gl, program)),
+        // downloadProgram(gl, require("../shader/pbr-vert.glsl"), require("../shader/pbr-frag.glsl"))
+        //     .then(program => { }),
+        downloadProgram(gl, require("../shader/drawTexture.vert"), require("../shader/drawTexture.frag"))
+            .then(program => textureProgram = new DrawTexture(gl, program)),
+        downloadProgram(gl, require("../shader/gBuffer.vert"), require("../shader/gBuffer.frag"))
+            .then(program => gbufferProgram = new GBuffer(gl, program, canvas.width, canvas.height)),
+        downloadProgram(gl, require("../shader/drawTexture.vert"), require("../shader/deferred.frag"))
+            .then(program => deferredProgram = new Deferred(gl, program, canvas.width, canvas.height)),
+    ]).then(render);
 }
 
 var i = 0;
 function render() {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    scene.nodes[0].rotation = quat.rotateX(scene.nodes[0].rotation, quat.fromEuler(quat.create(), 90, i++/10, 0), 0);
+    // scene.nodes[0].rotation = quat.rotateX(scene.nodes[0].rotation, quat.fromEuler(quat.create(), 90, i++ / 10, 0), 0);
     // phongProgram.renderScene(scene, view, lights);
     // textureProgram.renderTexture(scene.gltf.meshes[0].primitives[0].material.pbrMetallicRoughness.baseColorTexture.index.GetTextureIndex(gl));
-    deferredProgram.renderScene(scene, view);
-    textureProgram.renderTexture(deferredProgram.normalTexture);
-    // textureProgram.renderTexture(deferredProgram.normalTexture);
-    // textureProgram.renderTexture(deferredProgram.colorTexture);
+    gbufferProgram.renderScene(scene, view);
+    // textureProgram.renderTexture(gbufferProgram.colorTexture);
+    // textureProgram.renderTexture(gbufferProgram.normalTexture);
+    deferredProgram.render(
+        gbufferProgram.positionTexture,
+        gbufferProgram.normalTexture,
+        gbufferProgram.colorTexture,
+        gbufferProgram.depthRGBTexture,
+        gbufferProgram.defaultTexture,
+        view, lights
+    )
     window.requestAnimFrame(render);
 }

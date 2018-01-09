@@ -1,5 +1,6 @@
 import GLTF from "./index";
 import Material from "./material";
+import BufferView from "./bufferView";
 
 export default class Mesh {
     constructor(gltf, data) {
@@ -41,6 +42,7 @@ export class Primitive {
         const loadList = [this.attributes.loadFinish];
         if (data.indices !== undefined) {
             this.indices = gltf.accessors[data.indices];
+            this.indices.bufferView.target = BufferView.Target.ELEMENT_ARRAY_BUFFER;
             loadList.push(this.indices.loadFinish);
         }
         this.material = data.material !== undefined ? gltf.materials[data.material] : Material.default(gltf);

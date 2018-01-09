@@ -37,8 +37,8 @@ export default class Node {
 
     /** @type {Node[]} */
     get children() {
-        if (this._children) {
-            this._children = this.childrenIndex.map((value) => gltf.nodes[value]);
+        if (!this._children && this.childrenIndex) {
+            this._children = this.childrenIndex.map((value) => this.gltf.nodes[value]);
         }
         return this._children;
     }
