@@ -20,6 +20,7 @@ module.exports = {
             { test: /gl-matrix/, loader: "babel-loader", query: { presets: ['env'] } },
             { test: /\.html?$/, loader: "file-loader?name=[name].[ext]" },
             { test: /assets(?=\/|\\)/, loader: "file-loader?name=assets/[name].[ext]" },
+            { test: /shader(?=\/|\\)/, loader: "file-loader?name=shader/[name].[ext]" },
         ],
     },
     devtool: "source-map",

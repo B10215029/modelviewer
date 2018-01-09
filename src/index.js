@@ -76,7 +76,7 @@ window.onload = () => {
         // data.nodes.push(view);
     });
     // downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxAnimated/glTF/BoxAnimated.gltf").then(data => console.log(data));
-    const loadProgram = downloadProgram(gl, require("../assets/shader/phong.vert"), require("../assets/shader/phong.frag")).then(program => {
+    const loadProgram = downloadProgram(gl, require("../shader/phong.vert"), require("../shader/phong.frag")).then(program => {
         phongProgram = new Phong(gl, program);
     });
     Promise.all([loadScene, loadProgram]).then(render);
