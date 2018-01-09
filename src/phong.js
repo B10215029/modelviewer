@@ -174,10 +174,15 @@ export class Phong extends ShaderProgram {
 			this.gl.uniform3fv(this.lightPositionsLocation, lights.reduce((arr, val) => arr.concat(...vec3.transformMat4(vec3.create(), val.position, viewMatrix)), []));
 			this.gl.uniform4fv(this.lightColorsLocation, lights.reduce((arr, val) => arr.concat(val.color, 1), []));
 
-			this.gl.uniform1i(this.useTextureLocation, 1);
-			this.gl.activeTexture(this.gl.TEXTURE0);
-			// this.gl.bindTexture(this.gl.TEXTURE_2D, this.defaultTexture);
-			primitive.material.pbrMetallicRoughness.baseColorTexture.index.BindTexture(this.gl);
+			if (primitive.material.pbrMetallicRoughness.baseColorTexture) {
+				this.gl.uniform1i(this.useTextureLocation, 1);
+				this.gl.activeTexture(this.gl.TEXTURE0);
+				primitive.material.pbrMetallicRoughness.baseColorTexture.index.BindTexture(this.gl);
+			} else {
+				this.gl.uniform1i(this.useTextureLocation, 0);
+				this.gl.activeTexture(this.gl.TEXTURE0);
+				this.gl.bindTexture(this.gl.TEXTURE_2D, this.defaultTexture);
+			}
 
 			if (primitive.indices) {
 				this.gl.drawElements(primitive.mode, primitive.indices.count, primitive.indices.componentType, primitive.indices.byteOffset);

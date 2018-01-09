@@ -1,6 +1,7 @@
 precision mediump float;
 precision mediump int;
 const int MAX_LIGHT_COUNT = 8;
+varying vec3 screenPosition;
 varying vec3 fragPosition;
 varying vec3 fragNormal;
 varying vec2 fragUV;

@@ -11,11 +11,17 @@ import Node from "./gltf/node";
 import Camera from "./gltf/camera";
 import { Light } from "./light"
 import { LightController } from "./lightController"
+import { DrawTexture } from "./drawTexture";
+import { Deferred } from "./deferred";
 
 /** @type {WebGL2RenderingContext} */
 var gl;
 /** @type {Phong} */
 var phongProgram;
+/** @type {DrawTexture} */
+var textureProgram;
+/** @type {Deferred} */
+var deferredProgram;
 /** @type {Scene} */
 var scene;
 /** @type {Node} */
@@ -67,7 +73,7 @@ window.onload = () => {
                 "aspectRatio": canvas.width / canvas.height,
                 "yfov": 37 / 180 * Math.PI,
                 // "yfov": 0.660593,
-                // "zfar": 100,
+                "zfar": 100,
                 "znear": 0.01
             }
         });
@@ -79,12 +85,25 @@ window.onload = () => {
     const loadProgram = downloadProgram(gl, require("../shader/phong.vert"), require("../shader/phong.frag")).then(program => {
         phongProgram = new Phong(gl, program);
     });
-    Promise.all([loadScene, loadProgram]).then(render);
+    const loadTextureProgram = downloadProgram(gl, require("../shader/drawTexture.vert"), require("../shader/drawTexture.frag")).then(program => {
+        textureProgram = new DrawTexture(gl, program);
+    });
+    const loadDeferredProgram = downloadProgram(gl, require("../shader/deferred.vert"), require("../shader/deferred.frag")).then(program => {
+        deferredProgram = new Deferred(gl, program, canvas.width, canvas.height);
+    });
+    // downloadProgram(gl, require("../shader/pbr-vert.glsl"), require("../shader/pbr-frag.glsl"));
+    Promise.all([loadScene, loadProgram, loadTextureProgram, loadDeferredProgram]).then(render);
 }
 
 var i = 0;
 function render() {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     scene.nodes[0].rotation = quat.rotateX(scene.nodes[0].rotation, quat.fromEuler(quat.create(), 90, i++/10, 0), 0);
-    phongProgram.renderScene(scene, view, lights);
+    // phongProgram.renderScene(scene, view, lights);
+    // textureProgram.renderTexture(scene.gltf.meshes[0].primitives[0].material.pbrMetallicRoughness.baseColorTexture.index.GetTextureIndex(gl));
+    deferredProgram.renderScene(scene, view);
+    textureProgram.renderTexture(deferredProgram.normalTexture);
+    // textureProgram.renderTexture(deferredProgram.normalTexture);
+    // textureProgram.renderTexture(deferredProgram.colorTexture);
     window.requestAnimFrame(render);
 }

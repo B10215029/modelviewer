@@ -1,3 +1,4 @@
+#version 300 es
 //
 // This fragment shader defines a reference implementation for Physically Based Shading of
 // a microfacet surface material defined by a glTF model.
@@ -11,19 +12,19 @@
 //     https://github.com/KhronosGroup/glTF-WebGL-PBR/#environment-maps
 // [4] "An Inexpensive BRDF Model for Physically based Rendering" by Christophe Schlick
 //     https://www.cs.virginia.edu/~jdl/bib/appearance/analytic%20models/schlick94b.pdf
-#extension GL_EXT_shader_texture_lod: enable
-#extension GL_OES_standard_derivatives : enable
 
 precision highp float;
 
-uniform vec3 u_LightDirection;
-uniform vec3 u_LightColor;
+const int MAX_LIGHT_COUNT = 8;
+uniform int u_LightCount;
+uniform vec3 u_LightDirections[MAX_LIGHT_COUNT];
+uniform vec3 u_LightColors[MAX_LIGHT_COUNT];
 
-#ifdef USE_IBL
+// #ifdef USE_IBL
 uniform samplerCube u_DiffuseEnvSampler;
 uniform samplerCube u_SpecularEnvSampler;
 uniform sampler2D u_brdfLUT;
-#endif
+// #endif
 
 #ifdef HAS_BASECOLORMAP
 uniform sampler2D u_BaseColorSampler;
@@ -54,17 +55,19 @@ uniform vec4 u_ScaleDiffBaseMR;
 uniform vec4 u_ScaleFGDSpec;
 uniform vec4 u_ScaleIBLAmbient;
 
-varying vec3 v_Position;
+in vec3 v_Position;
 
-varying vec2 v_UV;
+in vec2 v_UV;
 
 #ifdef HAS_NORMALS
 #ifdef HAS_TANGENTS
-varying mat3 v_TBN;
+in mat3 v_TBN;
 #else
-varying vec3 v_Normal;
+in vec3 v_Normal;
 #endif
 #endif
+
+out vec4 fragColor;
 
 // Encapsulate the various inputs used by the various functions in the shading equation
 // We store values in this struct to simplify the integration of alternative implementations
@@ -146,13 +149,13 @@ vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
     float mipCount = 9.0; // resolution of 512x512
     float lod = (pbrInputs.perceptualRoughness * mipCount);
     // retrieve a scale and bias to F0. See [1], Figure 3
-    vec3 brdf = SRGBtoLINEAR(texture2D(u_brdfLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
-    vec3 diffuseLight = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, n)).rgb;
+    vec3 brdf = SRGBtoLINEAR(texture(u_brdfLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
+    vec3 diffuseLight = SRGBtoLINEAR(texture(u_DiffuseEnvSampler, n)).rgb;
 
 #ifdef USE_TEX_LOD
-    vec3 specularLight = SRGBtoLINEAR(textureCubeLodEXT(u_SpecularEnvSampler, reflection, lod)).rgb;
+    vec3 specularLight = SRGBtoLINEAR(texture(u_SpecularEnvSampler, reflection, lod)).rgb;
 #else
-    vec3 specularLight = SRGBtoLINEAR(textureCube(u_SpecularEnvSampler, reflection)).rgb;
+    vec3 specularLight = SRGBtoLINEAR(texture(u_SpecularEnvSampler, reflection)).rgb;
 #endif
 
     vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;
@@ -248,7 +251,7 @@ void main()
 
     vec3 n = getNormal();                             // normal at surface point
     vec3 v = normalize(u_Camera - v_Position);        // Vector from surface point to camera
-    vec3 l = normalize(u_LightDirection);             // Vector from surface point to light
+    vec3 l = normalize(u_LightDirections[0]);             // Vector from surface point to light
     vec3 h = normalize(l+v);                          // Half vector between both l and v
     vec3 reflection = -normalize(reflect(v, n));
 
@@ -281,7 +284,7 @@ void main()
     // Calculation of analytical lighting contribution
     vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
     vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
-    vec3 color = NdotL * u_LightColor * (diffuseContrib + specContrib);
+    vec3 color = NdotL * u_LightColors[0] * (diffuseContrib + specContrib);
 
     // Calculate lighting contribution from image based lighting source (IBL)
 #ifdef USE_IBL
@@ -311,5 +314,5 @@ void main()
     color = mix(color, vec3(metallic), u_ScaleDiffBaseMR.z);
     color = mix(color, vec3(perceptualRoughness), u_ScaleDiffBaseMR.w);
 
-    gl_FragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
+    fragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
 }
