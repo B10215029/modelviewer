@@ -13,6 +13,7 @@ export class DrawTexture extends ShaderProgram {
     }
 
     renderTexture(texture, flipY) {
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.gl.useProgram(this.program);
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
