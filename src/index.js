@@ -16,6 +16,7 @@ import { Deferred } from "./program/deferred";
 import { AmbientOcclusionVolumes } from "./program/aov";
 import { SSAO } from "./program/ssao";
 import { SSAOProgram } from "./program/SSAOProgram";
+import { HBAO } from "./program/hbao";
 
 import { Light } from "./light"
 import { LightController } from "./lightController"
@@ -41,6 +42,8 @@ var deferredProgram;
 var aovProgram;
 /** @type {SSAO} */
 var ssaoProgram;
+/** @type {HBAO} */
+var hbaoProgram;
 /** @type {SSAOProgram} */
 var ssaoProgram;
 var ssaoProgram2;
@@ -93,21 +96,34 @@ window.onload = () => {
         .then(data => {
             console.log(data);
             scene = data.scene;
-            const camera = new Camera(data, {
-                "name": "Finite perspective camera",
-                "type": "perspective",
-                "perspective": {
-                    "aspectRatio": canvas.width / canvas.height,
-                    "yfov": 37 / 180 * Math.PI,
-                    // "yfov": 0.660593,
-                    "zfar": 100,
-                    "znear": 0.01
+            const findCamera = (node) => {
+                if (!view) {
+                    if (node.camera) {
+                        view = node;
+                    } else if (node.children) {
+                        node.children.forEach(findCamera);
+                    }
                 }
-            });
-            view = new Node(data, { camera: (data.cameras || (data.cameras = [])).push(camera) - 1 });
-            view.translation = vec3.fromValues(0, 0, 5);
+            }
+            scene.nodes.forEach(findCamera);
+            if (!view) {
+                const camera = new Camera(data, {
+                    "name": "Finite perspective camera",
+                    "type": "perspective",
+                    "perspective": {
+                        "aspectRatio": canvas.width / canvas.height,
+                        "yfov": 37 / 180 * Math.PI,
+                        // "yfov": 0.660593,
+                        "zfar": 50,
+                        "znear": 0.01
+                    }
+                });
+                view = new Node(data, { camera: (data.cameras || (data.cameras = [])).push(camera) - 1 });
+                view.translation = vec3.fromValues(0, 0, 3);
+            }
             // view.translation = vec3.fromValues(0, 0.05, 0.2);
             // view = scene.nodes[0];
+            // view.camera.perspective.znear = 1;
         });
     Promise.all([
         loadScene,
@@ -137,25 +153,30 @@ window.onload = () => {
         //         ssaoProgram2 = new SSAOProgram(gl, program1, program2, canvas.width, canvas.height, 0.01, 100);
         //     });
         // }),
+        downloadProgram(gl, require("../shader/drawTexture.vert"), require("../shader/hbao.frag"))
+            .then(program => hbaoProgram = new HBAO(gl, program, canvas.width, canvas.height)),
     ]).then(render);
 }
 
 var i = 0;
 var ao = 1;
 function render() {
-    scene.nodes[0].rotation = quat.rotateX(scene.nodes[0].rotation, quat.fromEuler(quat.create(), 90, i++ / 10, 0), 0);
+    // scene.nodes[0].rotation = quat.rotateX(scene.nodes[0].rotation, quat.fromEuler(quat.create(), 90, i++ / 10, 0), 0);
+    // scene.nodes[1].rotation = quat.rotateX(scene.nodes[1].rotation, quat.fromEuler(quat.create(), 90, i++ / 10, 180), 0);
     // phongProgram.renderScene(scene, view, lights);
     // textureProgram.renderTexture(scene.gltf.meshes[0].primitives[0].material.pbrMetallicRoughness.baseColorTexture.index.GetTextureIndex(gl));
     gbufferProgram.renderScene(scene, view);
     // ssaoProgram.render(view);
-    // textureProgram.renderTexture(gbufferProgram.normalTexture);
+    hbaoProgram.render(gbufferProgram.depthTexture, gbufferProgram.normalTexture, gbufferProgram.positionTexture, view.camera);
+    // hbaoProgram.render(gbufferProgram.depthRGBTexture, gbufferProgram.positionTexture);
+    // textureProgram.renderTexture(hbaoProgram.occlusionTexutre);
     deferredProgram.render(
         gbufferProgram.positionTexture,
         gbufferProgram.normalTexture,
         gbufferProgram.colorTexture,
         gbufferProgram.depthRGBTexture,
-        // ssaoProgram.occlusionTexutre,
-        gbufferProgram.defaultTexture,
+        hbaoProgram.occlusionTexutre,
+        // gbufferProgram.defaultTexture,
         view, lights
     );
     // if (ao == 1)
