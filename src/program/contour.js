@@ -1,7 +1,7 @@
 import { ShaderProgram } from "./shaderProgram";
 import { vec3, vec4, mat4 } from "gl-matrix";
 
-export class HBAO extends ShaderProgram {
+export class Contour extends ShaderProgram {
 	/**
 	 * create a Physically Based Rendering Shader Program
 	 * @param {WebGL2RenderingContext} gl 
@@ -17,28 +17,21 @@ export class HBAO extends ShaderProgram {
         // this.invvpMatrixLocation = gl.getUniformLocation(program, "invvp");
         // this.noiseScaleMatrixLocation = gl.getUniformLocation(program, "noiseScale");
         this.resolutionLocation = gl.getUniformLocation(program, "resolution");
-        this.unprojectionMatrixLocation = gl.getUniformLocation(program, "unprojectionMatrix");
 
         this.positionTextureLocation = gl.getUniformLocation(program, "positionMap");
         this.depthTexutreLocation = gl.getUniformLocation(program, "depthTexture");
         this.normalTexutreLocation = gl.getUniformLocation(program, "normalTexture");
         // this.noiseTexutreLocation = gl.getUniformLocation(program, "noiseMap");
         
-        this.directionCountLocation = gl.getUniformLocation(program, "directionCount");
-        this.numstepLocation = gl.getUniformLocation(program, "numstep");
-        this.pixelRadiusLocation = gl.getUniformLocation(program, "pixelRadius");
+        this.drawSilhouetteLocation = gl.getUniformLocation(program, "drawSilhouette");
+        this.drawContourLocation = gl.getUniformLocation(program, "drawContour");
+        this.drawSuggestiveLocation = gl.getUniformLocation(program, "drawSuggestive");
+        this.contourOnlyLocation = gl.getUniformLocation(program, "contourOnly");
         this.radiusLocation = gl.getUniformLocation(program, "radius");
-        this.biasLocation = gl.getUniformLocation(program, "bias");
-        this.intensityLocation = gl.getUniformLocation(program, "intensity");
+        this.contourThresholdLocation = gl.getUniformLocation(program, "contourThreshold");
 
-
-
-
-
-
-
-        this.occlusionTexutre = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, this.occlusionTexutre);
+        this.contourTexutre = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.contourTexutre);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -50,14 +43,15 @@ export class HBAO extends ShaderProgram {
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
         gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
         // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, this.gbuffer.depthTexture, 0);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.occlusionTexutre, 0);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.contourTexutre, 0);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
     render(depthTexture, normalTexture, positionTexture, camera) {
+        // this.gl.clear(this.gl.DEPTH_BUFFER_BIT);
         this.gl.useProgram(this.program);
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.frameBuffer);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        // this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.frameBuffer);
+        this.gl.clear(this.gl.DEPTH_BUFFER_BIT);
 
         // let viewMatrix = view ? mat4.invert(mat4.create(), view.worldMatrix) : mat4.create();
         // let projectionMatrix = (view && view.camera) ? view.camera.projectionMatrix : mat4.create();
@@ -65,13 +59,13 @@ export class HBAO extends ShaderProgram {
         // this.gl.uniformMatrix4fv(this.viewProjectionMatrixLocation, false, vp);
         // this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, this.uboSSAOKernal);
         this.gl.uniform2f(this.resolutionLocation, this.width, this.height);
-        this.gl.uniform1i(this.directionCountLocation, this.directionCountInput ? Number(this.directionCountInput.value) : 8);
-        this.gl.uniform1i(this.numstepLocation, this.numstepInput ? Number(this.numstepInput.value) : 4);
-        this.gl.uniform1f(this.pixelRadiusLocation, this.pixelRadiusInput ? Number(this.pixelRadiusInput.value) : 8);
-        this.gl.uniform1f(this.radiusLocation, this.radiusInput ? Number(this.radiusInput.value) : 10);
-        this.gl.uniform1f(this.biasLocation, this.biasInput ? Number(this.biasInput.value) : 0.2);
-        this.gl.uniform1f(this.intensityLocation, this.intensityInput ? Number(this.intensityInput.value) : 1);
-        this.gl.uniformMatrix4fv(this.unprojectionMatrixLocation, false, mat4.invert(mat4.create(), camera.matrix));
+        this.gl.uniform1i(this.drawSilhouetteLocation, this.drawSilhouetteInput && this.drawSilhouetteInput.checked ? 1 : 0);
+        this.gl.uniform1i(this.drawContourLocation, this.drawContourInput && this.drawContourInput.checked ? 1 : 0);
+        this.gl.uniform1i(this.drawSuggestiveLocation, this.drawSuggestiveInput && this.drawSuggestiveInput.checked ? 1 : 0);
+        this.gl.uniform1i(this.contourOnlyLocation, this.contourOnlyInput && this.contourOnlyInput.checked ? 1 : 0);
+        this.gl.uniform1i(this.radiusLocation, this.radiusInput ? Number(this.radiusInput.value) : 3);
+        this.gl.uniform1f(this.contourThresholdLocation, this.contourThresholdInput ? Number(this.contourThresholdInput.value) : 0.1);
+        // this.gl.uniformMatrix4fv(this.unprojectionMatrixLocation, false, mat4.invert(mat4.create(), camera.matrix));
 
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, depthTexture);
@@ -93,7 +87,7 @@ export class HBAO extends ShaderProgram {
         this.gl.uniform1i(this.positionTextureLocation, 3);
 
         this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4);
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        // this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     }
 
     /**
@@ -101,12 +95,12 @@ export class HBAO extends ShaderProgram {
      */
     createController() {
         const div = super.createController();
-        this.directionCountInput = this.addRangeNode("directionCount", 8, 20, 0, 1, div);
-        this.numstepInput = this.addRangeNode("numstep", 4, 10, 1, 1, div);
-        this.pixelRadiusInput = this.addRangeNode("pixelRadius", 8, 100, 0, 0.1, div);
-        this.radiusInput = this.addRangeNode("radius", 10, 100, 0.1, 0.1, div);
-        this.biasInput = this.addRangeNode("bias", 0.2, 1, 0, 0.1, div);
-        this.intensityInput = this.addRangeNode("intensity", 1, 10, 0, 0.1, div);
+        this.drawSilhouetteInput = this.addCheckBox("drawSilhouette", false, div);
+        this.drawContourInput = this.addCheckBox("drawContour", false, div);
+        this.drawSuggestiveInput = this.addCheckBox("drawSuggestive", false, div);
+        this.contourOnlyInput = this.addCheckBox("contourOnly", false, div);
+        this.radiusInput = this.addRangeNode("radius", 3, 30, 0, 1, div);
+        this.contourThresholdInput = this.addRangeNode("contourThreshold", 0.1, 10, 0, 0.1, div);
         return div;
     }
 }

@@ -17,6 +17,7 @@ import { AmbientOcclusionVolumes } from "./program/aov";
 import { SSAO } from "./program/ssao";
 import { SSAOProgram } from "./program/SSAOProgram";
 import { HBAO } from "./program/hbao";
+import { Contour } from "./program/contour";
 
 import { Light } from "./light"
 import { LightController } from "./lightController"
@@ -47,13 +48,19 @@ var hbaoProgram;
 /** @type {SSAOProgram} */
 var ssaoProgram;
 var ssaoProgram2;
+/** @type {Contour} */
+var contourProgram;
 
 window.onload = () => {
     let canvas = document.getElementById("glcanvas");
     gl = WebGLUtils.setupWebGL(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
+    // gl.clearColor(0.5, 0.5, 0.5, 1.0);
+    // gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     for (let i = 0; i < 3; i++) {
         lights.push(new Light());
@@ -73,7 +80,7 @@ window.onload = () => {
         }
         if (index === 1) {
             value.light.position = [100, 100, 0];
-            value.light.color = [0.7, 0.5, 0];
+            value.light.color = [1, 1, 1];
         }
         value.updateForm();
     });
@@ -83,16 +90,16 @@ window.onload = () => {
     // };
 
     const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf")
-    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxAnimated/glTF/BoxAnimated.gltf")
-    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf")
-    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/2CylinderEngine/glTF/2CylinderEngine.gltf")
-    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BarramundiFish/glTF/BarramundiFish.gltf")
-    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBox/glTF/BoomBox.gltf")
-    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBoxWithAxes/glTF/BoomBoxWithAxes.gltf")
-    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxTexturedNonPowerOfTwo/glTF/BoxTexturedNonPowerOfTwo.gltf")
-    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxVertexColors/glTF/BoxVertexColors.gltf")
-    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BrainStem/glTF/BrainStem.gltf")
-    // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Buggy/glTF/Buggy.gltf")
+        // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxAnimated/glTF/BoxAnimated.gltf")
+        // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Avocado/glTF/Avocado.gltf")
+        // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/2CylinderEngine/glTF/2CylinderEngine.gltf")
+        // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BarramundiFish/glTF/BarramundiFish.gltf")
+        // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBox/glTF/BoomBox.gltf")
+        // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoomBoxWithAxes/glTF/BoomBoxWithAxes.gltf")
+        // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxTexturedNonPowerOfTwo/glTF/BoxTexturedNonPowerOfTwo.gltf")
+        // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxVertexColors/glTF/BoxVertexColors.gltf")
+        // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BrainStem/glTF/BrainStem.gltf")
+        // const loadScene = downloadGLTF("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Buggy/glTF/Buggy.gltf")
         .then(data => {
             console.log(data);
             scene = data.scene;
@@ -155,13 +162,23 @@ window.onload = () => {
         // }),
         downloadProgram(gl, require("../shader/drawTexture.vert"), require("../shader/hbao.frag"))
             .then(program => hbaoProgram = new HBAO(gl, program, canvas.width, canvas.height)),
-    ]).then(render);
+        downloadProgram(gl, require("../shader/drawTexture.vert"), require("../shader/contour.frag"))
+            .then(program => contourProgram = new Contour(gl, program, canvas.width, canvas.height)),
+    ]).then(() => {
+        document.body.appendChild(document.createElement("br"));
+        document.body.appendChild(hbaoProgram.createController());
+        document.body.appendChild(document.createElement("br"));
+        document.body.appendChild(deferredProgram.createController());
+        document.body.appendChild(document.createElement("br"));
+        document.body.appendChild(contourProgram.createController());
+        render();
+    });
 }
 
 var i = 0;
 var ao = 1;
 function render() {
-    // scene.nodes[0].rotation = quat.rotateX(scene.nodes[0].rotation, quat.fromEuler(quat.create(), 90, i++ / 10, 0), 0);
+    scene.nodes[0].rotation = quat.rotateX(scene.nodes[0].rotation, quat.fromEuler(quat.create(), 90, i++ / 10, 0), 0);
     // scene.nodes[1].rotation = quat.rotateX(scene.nodes[1].rotation, quat.fromEuler(quat.create(), 90, i++ / 10, 180), 0);
     // phongProgram.renderScene(scene, view, lights);
     // textureProgram.renderTexture(scene.gltf.meshes[0].primitives[0].material.pbrMetallicRoughness.baseColorTexture.index.GetTextureIndex(gl));
@@ -179,6 +196,8 @@ function render() {
         // gbufferProgram.defaultTexture,
         view, lights
     );
+    contourProgram.render(gbufferProgram.depthTexture, gbufferProgram.normalTexture, gbufferProgram.positionTexture, view.camera);
+    // textureProgram.renderTexture(contourProgram.contourTexutre);
     // if (ao == 1)
     // ssaoProgram.renderSSAO(gbufferProgram.colorTexture, gbufferProgram.positionTexture, gbufferProgram.normalTexture);
     // else {

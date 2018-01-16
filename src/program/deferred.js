@@ -22,7 +22,13 @@ export class Deferred extends ShaderProgram {
 
 		this.lightCountLocation = gl.getUniformLocation(program, "lightCount");
 		this.lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
-		this.lightColorsLocation = gl.getUniformLocation(program, "lightColors");
+        this.lightColorsLocation = gl.getUniformLocation(program, "lightColors");
+
+		this.showpositionLocation = gl.getUniformLocation(program, "showposition");
+		this.shownormalLocation = gl.getUniformLocation(program, "shownormal");
+		this.showcolorLocation = gl.getUniformLocation(program, "showcolor");
+		this.showdepthLocation = gl.getUniformLocation(program, "showdepth");
+		this.showocclusionLocation = gl.getUniformLocation(program, "showocclusion");
     }
 
 	/**
@@ -43,6 +49,12 @@ export class Deferred extends ShaderProgram {
         this.gl.uniform1i(this.lightCountLocation, lights.length);
         this.gl.uniform3fv(this.lightPositionsLocation, lights.reduce((arr, val) => arr.concat(...vec3.transformMat4(vec3.create(), val.position, viewMatrix)), []));
         this.gl.uniform4fv(this.lightColorsLocation, lights.reduce((arr, val) => arr.concat(val.color, 1), []));
+
+        this.gl.uniform1i(this.showpositionLocation, this.showposition && this.showposition.checked ? 1 : 0);
+        this.gl.uniform1i(this.shownormalLocation, this.shownormal && this.shownormal.checked ? 1 : 0);
+        this.gl.uniform1i(this.showcolorLocation, this.showcolor && this.showcolor.checked ? 1 : 0);
+        this.gl.uniform1i(this.showdepthLocation, this.showdepth && this.showdepth.checked ? 1 : 0);
+        this.gl.uniform1i(this.showocclusionLocation, this.showocclusion && this.showocclusion.checked ? 1 : 0);
 
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, positionTexutre);
@@ -66,4 +78,19 @@ export class Deferred extends ShaderProgram {
         
         this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 4);
     }
+
+    /**
+     * @returns {HTMLDivElement}
+     */
+    createController() {
+        const div = super.createController();
+        this.showposition = this.addCheckBox("position", false, div);
+        this.shownormal = this.addCheckBox("normal", false, div);
+        this.showcolor = this.addCheckBox("color", false, div);
+        this.showdepth = this.addCheckBox("depth", false, div);
+        this.showocclusion = this.addCheckBox("occlusion", false, div);
+        return div;
+    }
+
+
 }

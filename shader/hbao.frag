@@ -6,12 +6,12 @@ uniform sampler2D positionMap;
 uniform sampler2D depthTexture;
 uniform sampler2D normalTexture;
 uniform mat4 unprojectionMatrix;
-const int directionCount = 8;
-const int numstep = 4;
-const float pixelRadius = 8.0;
-const float radius = 10.0;
-const float bias = 0.2;
-const float intensity = 1.0;
+uniform int directionCount;
+uniform int numstep;
+uniform float pixelRadius;
+uniform float radius;
+uniform float bias;
+uniform float intensity;
 
 in vec2 texCoord;
 
@@ -65,81 +65,8 @@ float ComputeAO(vec3 P, vec3 N, vec3 S){
 void main() {
     vec3 p = GetPosition(gl_FragCoord.xy);
     vec3 n = -GetNormal(gl_FragCoord.xy);
-    // n.z = -n.z;
-    // vec3 t = GetTangent(gl_FragCoord.xy, vec3(1, 1, 0));
-    // vec3 h = GetPosition(gl_FragCoord.xy + vec2(10, 0));
-    // vec3 h = normalize(GetPosition(gl_FragCoord.xy + vec2(5, 5)) - p);
-    // fragColor = GetPosition(gl_FragCoord.xy);
-    // fragColor = vec4(GetTangent(gl_FragCoord.xy, vec3(1, 0, 0)), 1);
-    // fragColor = vec4(vec3(texture(depthTexture, gl_FragCoord.xy / resolution).r), 1);
-    // fragColor = vec4(vec3(GetPosition(gl_FragCoord.xy).z), 1);
-    // fragColor = GetPosition(gl_FragCoord.xy);
-    // if (gl_FragCoord.y > 450.0) {
-        // fragColor = vec4(vec3(h.z - t.z), 1);
-        // fragColor = vec4(p, 1);
-    // } else {
-        // fragColor = vec4(vec3(t.z - h.z), 1);
-        // fragColor = vec4(h, 1);
-    // }
-    // fragColor = vec4(vec3(t.z - h.z), 1);
-    // fragColor = vec4(GetPosition(gl_FragCoord.xy + vec2(10, 0)) - p + vec3(0.5), 1);
-    // fragColor = vec4(GetPosition(gl_FragCoord.xy + vec2(1, 0)) - p, 1);
-    // fragColor = vec4(GetNormal(gl_FragCoord.xy), 1);
-    // fragColor = vec4(GetPosition(gl_FragCoord.xy + vec2(0, 0)), 1);
-    // if (gl_FragCoord.y > 450.0) {
-    //     // fragColor = vec4(h, 1);
-    //     fragColor = vec4(vec3(h.z), 1);
-    // } else {
-    //     // fragColor = vec4(t, 1);
-    //     fragColor = vec4(vec3(t.z), 1);
-    // }
-    // fragColor = vec4(vec3(h.z - t.z), 1);
-    // if (h.z > t.z) {
-    //     fragColor = vec4(vec3(1), 1);
-    // } else {
-    //     fragColor = vec4(vec3(0), 1);
-    // }
-    // fragColor = vec4(vec3(texture(depthTexture, gl_FragCoord.xy).r), 1);
-    // vec3 s = GetPosition(gl_FragCoord.xy + vec2(10, 0));
-    // ao += ComputeAO(p, n, s);
-    // fragColor = vec4(vec3(ComputeAO(p, n, s)), 1);
-    // fragColor = texture(positionMap, gl_FragCoord.xy / resolution);
-    // fragColor = vec4(n, 1);
-    // fragColor = texture(normalTexture, gl_FragCoord.xy / resolution);
-    // fragColor = vec4(vec3(texture(normalTexture, gl_FragCoord.xy / resolution).z), 1);
-    // fragColor = vec4(vec3(random(gl_FragCoord.xy)), 1);
-
-
-    // float ao = 0.0;
-    // const int numdir = 10;
-    // const vec2 directions[numdir] = vec2[](
-    //     vec2(2, 0),
-    //     vec2(2, 1),
-    //     vec2(2, 2),
-    //     vec2(1, 2),
-    //     vec2(0, 2),
-    //     vec2(-2, -0),
-    //     vec2(-2, -1),
-    //     vec2(-2, -2),
-    //     vec2(-1, -2),
-    //     vec2(-0, -2)
-    // );
-    // const float numstep = 2.0;
-    // const int step = 2;
-    // for (int i = 1; i < numdir; i+=step) {
-    //     vec3 t = GetTangent(gl_FragCoord.xy, vec3(directions[i], 0));
-    //     float dao = 0.0;
-    //     for (float j = 0.0; j < numstep; j++) {
-    //         vec3 dsh = normalize(GetPosition(gl_FragCoord.xy + directions[i] * j) - p);
-    //         // if (t.z - dsh.z > dao) dao = t.z - dsh.z;
-    //         if (dsh.z - t.z > dao) dao = dsh.z - t.z;
-    //     }
-    //     ao += dao / float(numdir);
-    // }
-    // fragColor = vec4(vec3(1.0 - ao), 1);
-
-    const float stepInterval = pixelRadius / float(numstep);
-    const float angleInterval = 2.0 * 3.1415926 / float(directionCount);
+    float stepInterval = pixelRadius / float(numstep);
+    float angleInterval = 2.0 * 3.1415926 / float(directionCount);
     float stepOffset = stepInterval * random(gl_FragCoord.xy);
     float angle = angleInterval * random(gl_FragCoord.xy);
     float ao = 0.0;
@@ -154,5 +81,8 @@ void main() {
     }
     ao = ao / float(directionCount * numstep) / (1.0 - bias) * 2.0;
     ao = pow(clamp(1.0 - ao, 0.0, 1.0), intensity);
+    if (length(n) == 0.0) {
+        ao = 1.0;
+    }
     fragColor = vec4(vec3(ao), 1);
 }

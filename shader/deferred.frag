@@ -17,6 +17,12 @@ uniform sampler2D colorTexutre;
 uniform sampler2D depthTexutre;
 uniform sampler2D occlusionTexutre;
 
+uniform int showposition;
+uniform int shownormal;
+uniform int showcolor;
+uniform int showdepth;
+uniform int showocclusion;
+
 in vec2 texCoord;
 out vec4 fragColor;
 
@@ -40,4 +46,9 @@ void main() {
         }
     }
     fragColor = fragColor * texture(occlusionTexutre, texCoord);
+    if (showposition == 1)  fragColor = texture(positionTexutre, texCoord);
+    if (shownormal == 1)    fragColor = texture(normalTexutre, texCoord);
+    if (showcolor == 1)     fragColor = texture(colorTexutre, texCoord);
+    if (showdepth == 1)     fragColor = texture(depthTexutre, texCoord);
+    if (showocclusion == 1) fragColor = texture(occlusionTexutre, texCoord);
 }

@@ -7,6 +7,41 @@ export class ShaderProgram {
 		this.gl = gl;
 		this.program = program;
 	}
+
+	/**
+	 * @returns {HTMLDivElement}
+	 */
+	createController() {
+		return document.createElement("div");
+	}
+
+	addRangeNode(text, value, max, min, step, parent) {
+        let div = document.createElement("div");
+        let rangeInput = document.createElement("input");
+        rangeInput.setAttribute("type", "range");
+        rangeInput.setAttribute("min", min);
+        rangeInput.setAttribute("max", max);
+        rangeInput.setAttribute("step", step);
+        rangeInput.setAttribute("value", value);
+        let valueText = document.createTextNode(rangeInput.value);
+        div.oninput = () => valueText.textContent = rangeInput.value;
+        div.appendChild(document.createTextNode(text));
+        div.appendChild(rangeInput);
+        div.appendChild(valueText);
+        parent.appendChild(div);
+        return rangeInput;
+	}
+
+    addCheckBox(text, value, parent) {
+        let div = document.createElement("div");
+        let checkBoxInput = document.createElement("input");
+        checkBoxInput.setAttribute("type", "checkbox");
+		checkBoxInput.checked = value;
+        div.appendChild(checkBoxInput);
+        div.appendChild(document.createTextNode(text));
+        parent.appendChild(div);
+        return checkBoxInput;
+    }
 }
 
 /**
