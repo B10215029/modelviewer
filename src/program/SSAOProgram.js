@@ -56,8 +56,8 @@ export class SSAOProgram extends ShaderProgram {
         // set uniform
         let depthRange = vec2.fromValues(near, far);
         let ssaoUniformData = new Float32Array(8);
-        ssaoUniformData[0] = 16.0; // sample radius
-        ssaoUniformData[1] = 0.04; // bias
+        ssaoUniformData[0] = 26.0; // sample radius
+        ssaoUniformData[1] = 0.4; // bias
         ssaoUniformData.set(vec2.fromValues(1, 1), 2); // attenuation
         ssaoUniformData.set(depthRange, 4);
         let ssaoUniformBuffer = gl.createBuffer();

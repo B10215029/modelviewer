@@ -11,6 +11,8 @@ uniform int drawSuggestive;
 uniform int contourOnly;
 uniform int radius;
 uniform float contourThreshold;
+uniform float contourThreshold2;
+uniform vec3 color;
 
 in vec2 texCoord;
 
@@ -49,6 +51,41 @@ vec3 GetNormal(vec2 screenPosition) {
 //     // return normalize(cross(normal, direction));
 //     return normalize(cross(cross(normal, direction), normal));
 // }
+
+float intensity(in vec3 color) {
+	return sqrt((color.x*color.x)+(color.y*color.y)+(color.z*color.z));
+}
+
+float ndotp(vec2 uv) {
+    return dot(GetPosition(uv), GetNormal(uv));
+}
+
+float sobel(float step, vec2 center)
+{
+	// get samples around pixel
+    float tleft  = ndotp(center + vec2(-step,step));
+    float left   = ndotp(center + vec2(-step,0));
+    float bleft  = ndotp(center + vec2(-step,-step));
+    float top    = ndotp(center + vec2(0,step));
+    float bottom = ndotp(center + vec2(0,-step));
+    float tright = ndotp(center + vec2(step,step));
+    float right  = ndotp(center + vec2(step,0));
+    float bright = ndotp(center + vec2(step,-step));
+
+	// Sobel masks (to estimate gradient)
+	//        1 0 -1     -1 -2 -1
+	//    X = 2 0 -2  Y = 0  0  0
+	//        1 0 -1      1  2  1
+
+    float x = tleft + 2.0*left + bleft - tright - 2.0*right - bright;
+    float y = -tleft - 2.0*top - tright + bleft + 2.0 * bottom + bright;
+    float color = sqrt((x*x) + (y*y));
+    if (color > contourThreshold2){
+        return 1.0;
+    } else {
+        return 0.0;
+    }
+ }
 
 void main() {
     float contour = 0.0;
@@ -90,5 +127,25 @@ void main() {
         fragColor = vec4(vec3(1.0 - contour), 1);
     } else {
         fragColor = vec4(0, 0, 0, contour);
+    }
+
+    if (drawSuggestive == 1 && contour == 0.0) {
+        for (int i = 0; i < radius; i++) {
+            for (float angle = 0.0; angle <= 6.283; angle += 6.283 / float(radius * 5)) {
+                if (sobel(1.0, gl_FragCoord.xy + vec2(cos(angle), sin(angle)) * float(i)) == 1.0) {
+                    contour = 1.0;
+                    i = radius;
+                    break;
+                }
+            }
+        }
+        // contour = sobel(1.0, gl_FragCoord.xy);
+        if (contourOnly == 1) {
+            if (contour != 0.0) {
+                fragColor = vec4(color, 1);
+            }
+        } else {
+            fragColor = vec4(color, contour);
+        }
     }
 }

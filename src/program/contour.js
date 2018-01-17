@@ -17,6 +17,7 @@ export class Contour extends ShaderProgram {
         // this.invvpMatrixLocation = gl.getUniformLocation(program, "invvp");
         // this.noiseScaleMatrixLocation = gl.getUniformLocation(program, "noiseScale");
         this.resolutionLocation = gl.getUniformLocation(program, "resolution");
+        this.colorLocation = gl.getUniformLocation(program, "color");
 
         this.positionTextureLocation = gl.getUniformLocation(program, "positionMap");
         this.depthTexutreLocation = gl.getUniformLocation(program, "depthTexture");
@@ -29,6 +30,7 @@ export class Contour extends ShaderProgram {
         this.contourOnlyLocation = gl.getUniformLocation(program, "contourOnly");
         this.radiusLocation = gl.getUniformLocation(program, "radius");
         this.contourThresholdLocation = gl.getUniformLocation(program, "contourThreshold");
+        this.contourThreshold2Location = gl.getUniformLocation(program, "contourThreshold2");
 
         this.contourTexutre = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, this.contourTexutre);
@@ -58,6 +60,13 @@ export class Contour extends ShaderProgram {
         // let vp = mat4.multiply(mat4.create(), projectionMatrix, viewMatrix);
         // this.gl.uniformMatrix4fv(this.viewProjectionMatrixLocation, false, vp);
         // this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, this.uboSSAOKernal);
+        const color = [
+            parseInt(this.colorSelector.value.substring(1, 3), 16) / 255,
+            parseInt(this.colorSelector.value.substring(3, 5), 16) / 255,
+            parseInt(this.colorSelector.value.substring(5, 7), 16) / 255,
+        ];
+
+        this.gl.uniform3fv(this.colorLocation, color);
         this.gl.uniform2f(this.resolutionLocation, this.width, this.height);
         this.gl.uniform1i(this.drawSilhouetteLocation, this.drawSilhouetteInput && this.drawSilhouetteInput.checked ? 1 : 0);
         this.gl.uniform1i(this.drawContourLocation, this.drawContourInput && this.drawContourInput.checked ? 1 : 0);
@@ -65,6 +74,7 @@ export class Contour extends ShaderProgram {
         this.gl.uniform1i(this.contourOnlyLocation, this.contourOnlyInput && this.contourOnlyInput.checked ? 1 : 0);
         this.gl.uniform1i(this.radiusLocation, this.radiusInput ? Number(this.radiusInput.value) : 3);
         this.gl.uniform1f(this.contourThresholdLocation, this.contourThresholdInput ? Number(this.contourThresholdInput.value) : 0.1);
+        this.gl.uniform1f(this.contourThreshold2Location, this.contourThreshold2Input ? Number(this.contourThreshold2Input.value) : 3);
         // this.gl.uniformMatrix4fv(this.unprojectionMatrixLocation, false, mat4.invert(mat4.create(), camera.matrix));
 
         this.gl.activeTexture(this.gl.TEXTURE0);
@@ -101,6 +111,16 @@ export class Contour extends ShaderProgram {
         this.contourOnlyInput = this.addCheckBox("contourOnly", false, div);
         this.radiusInput = this.addRangeNode("radius", 3, 30, 0, 1, div);
         this.contourThresholdInput = this.addRangeNode("contourThreshold", 0.1, 10, 0, 0.1, div);
+        this.contourThreshold2Input = this.addRangeNode("contourThreshold2", 3, 10, 0, 0.1, div);
+
+        this.colorSelector = document.createElement("input");
+        this.colorSelector.setAttribute("type", "color");
+        this.colorSelector.defaultValue = "#000000";
+        this.colorSelector.setAttribute("list", "");
+
+        div.appendChild(document.createTextNode("Color"));
+        div.appendChild(this.colorSelector);
+        div.appendChild(document.createElement("br"));
         return div;
     }
 }

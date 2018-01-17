@@ -64,7 +64,7 @@ float ComputeAO(vec3 P, vec3 N, vec3 S){
 
 void main() {
     vec3 p = GetPosition(gl_FragCoord.xy);
-    vec3 n = -GetNormal(gl_FragCoord.xy);
+    vec3 n = GetNormal(gl_FragCoord.xy);
     float stepInterval = pixelRadius / float(numstep);
     float angleInterval = 2.0 * 3.1415926 / float(directionCount);
     float stepOffset = stepInterval * random(gl_FragCoord.xy);

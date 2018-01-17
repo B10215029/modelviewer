@@ -48,11 +48,12 @@
  * @param {*} opt_canvas 
  * @param {*} opt_context 
  */
-export function CameraController(element, camera, opt_canvas, opt_context) {
+export function CameraController(element, onchange, opt_canvas, opt_context) {
     var controller = this;
     this.onchange = null;
     this.xRot = 0;
     this.yRot = 0;
+    this.scale = 0;
     this.wheelDelta = 0;
     this.scaleFactor = 3.0;
     this.dragging = false;
@@ -139,11 +140,11 @@ export function CameraController(element, camera, opt_canvas, opt_context) {
     function mousewheel(ev) {
         if (ev.wheelDelta > 0) {
             controller.wheelDelta++;
-            camera.scale--;
+            controller.scale-=0.2;
             // camera.fovy-=3.14/180;
         } else {
             controller.wheelDelta--;
-            camera.scale++;
+            controller.scale+=0.2;
             // camera.fovy+=3.14/180;
         }
         // console.log(camera.fovy/3.14*180);
@@ -160,8 +161,11 @@ export function CameraController(element, camera, opt_canvas, opt_context) {
     element.addEventListener("mousewheel", mousewheel, false);
 
     controller.onchange = () => {
-        camera.rotation[0] = this.xRot / 180 * 3.14;
-        camera.rotation[1] = this.yRot / 180 * 3.14;
+        // camera.rotation[0] = this.xRot / 180 * 3.14;
+        // camera.rotation[1] = this.yRot / 180 * 3.14;
+        if (onchange) {
+            onchange(controller.xRot, controller.yRot, controller.scale);
+        }
     }
 
     var activeTouchIdentifier;
