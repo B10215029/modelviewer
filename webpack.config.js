@@ -1,9 +1,9 @@
 "use strict";
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
     entry: {
         app: ["babel-polyfill", "./src/index.js"],
-        "gl-matrix": ["gl-matrix"],
     },
     output: {
         path: __dirname + "/dist",
@@ -16,12 +16,17 @@ module.exports = {
     },
     module: {
         loaders: [
-            { test: /\.jsx?$/, exclude: /node_modules/, loader: "babel-loader", query: { presets: ['env'] } },
-            { test: /gl-matrix/, loader: "babel-loader", query: { presets: ['env'] } },
-            { test: /\.html?$/, loader: "file-loader?name=[name].[ext]" },
+            { test: /\.jsx?$/, exclude: /node_modules/, loader: "babel-loader", query: { presets: ['env', 'react'] } },
             { test: /assets(?=\/|\\)/, loader: "file-loader?name=assets/[name].[ext]" },
             { test: /shader(?=\/|\\)/, loader: "file-loader?name=shader/[name].[ext]" },
         ],
     },
     devtool: "source-map",
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: `${__dirname}/src/index.html`,
+            filename: 'index.html',
+            inject: 'body',
+        }),
+    ],
 };

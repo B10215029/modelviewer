@@ -1,6 +1,4 @@
-import "./index.html";
 import "./webgl-utils.js";
-import "./fetch.js";
 import "gl-matrix";
 import { vec3, vec4, mat4, quat } from "gl-matrix"
 import { downloadGLTF } from "./gltf"
@@ -237,7 +235,7 @@ window.onload = () => {
         div.appendChild(checkBoxInput);
         div.appendChild(document.createTextNode("SSAO"));
         document.body.appendChild(div);
-        
+
         div = document.createElement("div");
         checkBoxInput2 = document.createElement("input");
         checkBoxInput2.setAttribute("type", "checkbox");
@@ -294,34 +292,34 @@ function render() {
 
 function downloadScene(url) {
     return downloadGLTF(url)
-    .then(data => {
-        console.log(data);
-        scene = data.scene;
-        const findCamera = (node) => {
-            if (!view) {
-                if (node.camera) {
-                    view = node;
-                } else if (node.children) {
-                    node.children.forEach(findCamera);
+        .then(data => {
+            console.log(data);
+            scene = data.scene;
+            const findCamera = (node) => {
+                if (!view) {
+                    if (node.camera) {
+                        view = node;
+                    } else if (node.children) {
+                        node.children.forEach(findCamera);
+                    }
                 }
             }
-        }
-        scene.nodes.forEach(findCamera);
-        if (!view) {
-            const camera = new Camera(data, {
-                "name": "Finite perspective camera",
-                "type": "perspective",
-                "perspective": {
-                    "aspectRatio": canvas.width / canvas.height,
-                    "yfov": 37 / 180 * Math.PI,
-                    // "yfov": 0.660593,
-                    "zfar": 100,
-                    "znear": 0.01
-                }
-            });
-            view = new Node(data, { camera: (data.cameras || (data.cameras = [])).push(camera) - 1 });
-            view.translation = vec3.fromValues(0, 0, 5);
-        }
-        viewInitPos = view.translation;
-    });
+            scene.nodes.forEach(findCamera);
+            if (!view) {
+                const camera = new Camera(data, {
+                    "name": "Finite perspective camera",
+                    "type": "perspective",
+                    "perspective": {
+                        "aspectRatio": canvas.width / canvas.height,
+                        "yfov": 37 / 180 * Math.PI,
+                        // "yfov": 0.660593,
+                        "zfar": 100,
+                        "znear": 0.01
+                    }
+                });
+                view = new Node(data, { camera: (data.cameras || (data.cameras = [])).push(camera) - 1 });
+                view.translation = vec3.fromValues(0, 0, 5);
+            }
+            viewInitPos = view.translation;
+        });
 }
